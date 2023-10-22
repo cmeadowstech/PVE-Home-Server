@@ -1,0 +1,6 @@
+---
+- name: Setup Samba
+  hosts: samba
+  roles:
+    - update
+    - samba

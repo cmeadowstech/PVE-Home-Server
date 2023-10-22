@@ -1,0 +1,39 @@
+---
+- name: Install dependencies
+  ansible.builtin.apt:
+    pkg:
+      - samba
+      - samba-common-bin
+      - acl
+  
+- name: Add users for other services
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    password: "{{ item.password | password_hash('sha512') }}"
+  with_items:
+    - "{{ users }}"
+
+- name: Copy smb.conf
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+  notify:
+    - Restart samba
+
+- name: Create Samba users
+  ansible.builtin.shell: >
+    set -e -o pipefail
+    && (echo '{{ item.password }}'; echo '{{ item.password }}')
+    | smbpasswd -s -a {{ item.username }}
+  args:
+    executable: /bin/bash
+  register: samba_create_users
+  changed_when: "'Added user' in samba_create_users.stdout"
+  with_items:
+    - "{{ users }}"
+  no_log: true
+
+- name: Set ACL permissions
+  ansible.builtin.shell: setfacl -R -m u:{{ item.name }}:rwx {{ item.mount }}
+  with_items:
+    - "{{ shares }}" # This works instead of {{ users }} because mount names are same as usernames

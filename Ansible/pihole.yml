@@ -1,0 +1,7 @@
+---
+- name: Set up Pi-Hole
+  hosts: pihole
+  roles:
+    - updatee
+    - pihole
+    

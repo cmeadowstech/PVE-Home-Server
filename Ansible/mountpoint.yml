@@ -1,0 +1,16 @@
+---
+- name: Add Mountpoint from PVE
+  hosts: pve_server
+  tasks:
+    - name: Stop LXC
+      ansible.builtin.command: pct stop 117
+
+    - name: Run CMD to add Mountpoint
+      ansible.builtin.command: "{{ item }}"
+      with_items:
+        - pct set 117 -mp0 /mnt/pve/share,mp=/mnt/pve-share
+        - pct set 117 -mp1 /mnt/pve/share-old,mp=/mnt/backup
+
+    - name: Start LXC
+      ansible.builtin.command: pct start 117
+    
