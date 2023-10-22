@@ -36,3 +36,7 @@ Password file defined under ansible.cfg:
 ```
 vault_password_file = ~/.pve_pass.txt
 ```
+
+<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+
+<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
