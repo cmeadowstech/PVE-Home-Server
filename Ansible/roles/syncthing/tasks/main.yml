@@ -1,0 +1,58 @@
+---
+- name: Install apt dependencies
+  ansible.builtin.apt:
+    pkg:
+      - syncthing
+      - python3-pip
+    cache_valid_time: 86400 # One day
+
+- name: Install Python dependencies
+  ansible.builtin.pip:
+    name: lxml
+    extra_args: --break-system-packages
+
+- name: Replace default GUI address
+  ansible.builtin.replace:
+    path: /root/.config/syncthing/config.xml
+    regexp: '<gui.*>[\s\S]*?</address>'
+    replace: |-
+      <gui enabled="true" tls="false" debugging="false">
+        <address>{{ ansible_eth0.ipv4.address }}:8384</address>
+
+- name: Ensure Syncthing is started
+  ansible.builtin.service:
+    name: syncthing@root
+    state: started
+    enabled: true
+
+- name: Get Syncthing API X-API-Key
+  community.general.xml:
+    path: /root/.config/syncthing/config.xml
+    xpath: /configuration/gui/apikey
+    content: text
+  register: syncthing_api_key
+
+- name: Add auth to GUI
+  ansible.builtin.uri:
+    url: http://{{ ansible_eth0.ipv4.address }}:8384/rest/config/gui
+    body_format: json
+    method: patch
+    headers:
+      Content-Type: application/json
+      X-API-Key: "{{ syncthing_api_key.matches[0].apikey }}"
+    body:
+      user: cmeadows
+      password: "{{ password }}"
+
+- name: Add folders to Syncthing
+  ansible.builtin.uri:
+    url: http://{{ ansible_eth0.ipv4.address }}:8384/rest/config/folders
+    body_format: json
+    headers:
+      Content-Type: application/json
+      X-API-Key: "{{ syncthing_api_key.matches[0].apikey }}"
+    body:
+      id: downloads
+      path: /mnt/pve-share/Downloads
+
+- debug: msg="Syncthing can be accessed at http://{{ ansible_eth0.ipv4.address }}:8384/"

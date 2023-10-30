@@ -36,5 +36,11 @@ variable "ip" {
 variable "unprivileged" {
   description = "If the LXC is privileged or not"
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "nesting" {
+  description = "Enable nesting?"
+  type = bool
+  default = false
 }

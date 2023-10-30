@@ -12,7 +12,7 @@ provider "proxmox" {
 }
 
 module "pihole" {
-  source = "./modules/lxc"
+  source = "../modules/lxc"
 
   hostname     = "pihole"
   cores        = 2
@@ -23,7 +23,7 @@ module "pihole" {
 }
 
 module "samba" {
-  source = "./modules/lxc"
+  source = "../modules/lxc"
 
   hostname     = "samba"
   cores        = 1

@@ -1,0 +1,2 @@
+username={{ users | selectattr('username','equalto',user) | map(attribute='username') | first }}
+password={{ users | selectattr('username','equalto',user) | map(attribute='password') | first }}

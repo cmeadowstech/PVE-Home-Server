@@ -1,0 +1,19 @@
+---
+- name: Install apt dependences
+  ansible.builtin.apt:
+    pkg:
+      - curl
+      - iptables
+    cache_valid_time: 86400 # One day
+
+- name: Install tailscale
+  ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+
+- name: Ensure tailscale is running
+  ansible.builtin.service:
+    name: tailscaled
+    state: started
+    enabled: true
+
+- name: Start tailscale
+  ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --accept-dns=false

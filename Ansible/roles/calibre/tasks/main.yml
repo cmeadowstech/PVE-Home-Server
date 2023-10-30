@@ -1,0 +1,39 @@
+---
+- name: Install apt dependencies
+  ansible.builtin.apt:
+    pkg:
+      - calibre
+      - python3-pip
+
+- name: Install pip dependencies
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    extra_args: --break-system-packages
+  loop:
+    - calibreweb
+    - calibreweb[kobo]
+
+- name: Copy calibre-web.service file
+  ansible.builtin.template:
+    src: calibre-web.service.j2
+    dest: /etc/systemd/system/calibre-web.service
+
+- name: Copy calibre-server.service file
+  ansible.builtin.template:
+    src: calibre-server.service.j2
+    dest: /etc/systemd/system/calibre-server.service
+
+- name: Make sure calibre-web is running
+  ansible.builtin.systemd:
+    name: calibre-web
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Make sure calibre-server is running
+  ansible.builtin.systemd:
+    name: calibre-server
+    state: started
+    enabled: true
+    daemon_reload: true
+

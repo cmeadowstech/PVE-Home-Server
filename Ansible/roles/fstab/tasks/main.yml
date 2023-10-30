@@ -1,0 +1,38 @@
+---
+- name: Install apt dependencies
+  ansible.builtin.apt:
+    pkg:
+      - cifs-utils
+    cache_valid_time: 86400 # One day
+
+- name: Ensure group "{{ user }}" exists
+  ansible.builtin.group:
+    name: librarian
+    state: present
+
+- name: Ensure user "{{ user }}" exists
+  ansible.builtin.user:
+    name: librarian
+    password: "{{ password | password_hash('sha512') }}"
+    group: "{{ user }}"
+  register: user_results
+
+- name: Create directory for mount point
+  ansible.builtin.file:
+    path: /mnt/"{{ user }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    state: directory
+
+- name: Copy over .smbcreds file
+  ansible.builtin.template:
+    src: smbcreds.j2
+    dest: /root/.smbcreds
+
+- name: Mount SMB share
+  ansible.posix.mount:
+    src: //10.0.0.202/{{ user }}
+    path: /mnt/{{ user }}
+    opts: "rw,vers=3,credentials=/root/.smbcreds,uid={{ user_results.uid }},gid={{ user_results.group }},mfsymlinks,nobrl"
+    fstype: cifs
+    state: mounted

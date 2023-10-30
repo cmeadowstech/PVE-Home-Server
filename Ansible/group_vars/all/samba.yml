@@ -1,7 +1,0 @@
----
-shares:
-    - name: pve-share
-      mount: /mnt/pve-share
-
-    - name: plex
-      mount: /mnt/pve-share/Plex

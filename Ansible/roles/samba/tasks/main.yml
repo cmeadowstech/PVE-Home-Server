@@ -5,7 +5,8 @@
       - samba
       - samba-common-bin
       - acl
-  
+    cache_valid_time: 86400 # One day
+
 - name: Add users for other services
   ansible.builtin.user:
     name: "{{ item.username }}"

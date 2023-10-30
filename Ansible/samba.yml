@@ -4,3 +4,4 @@
   roles:
     - update
     - samba
+    - syncthing

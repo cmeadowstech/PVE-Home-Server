@@ -33,4 +33,26 @@ resource "proxmox_lxc" "lxc" {
     ip     = var.ip
     gw     = "10.0.0.1"
   }
+
+  features {
+    nesting = var.nesting
+  }
+
+  connection {
+    host = cidrhost("${self.network[0].ip}", 0)
+    user = "root"
+    private_key = file(var.ssh_keys["priv"])
+    agent = false
+    timeout = "1m"
+  } 
+
+  provisioner "remote-exec" {
+	  # Leave this here so we know when to start with Ansible local-exec 
+    inline = [ "echo 'Cool, we are ready for provisioning'"]
+  }
+  
+  provisioner "local-exec" {
+      working_dir = "../../Ansible/"
+      command = "ansible-playbook provision.yml -e \"lxc_id=${split("/", self.id)[2]} lxc_hostname=${self.hostname}\""
+  }
 }
