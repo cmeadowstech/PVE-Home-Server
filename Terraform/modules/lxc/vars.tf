@@ -41,6 +41,6 @@ variable "unprivileged" {
 
 variable "nesting" {
   description = "Enable nesting?"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
