@@ -9,7 +9,7 @@ Type=simple
 User={{ user }}
 Group={{ user }}
 #previous two lines should reflect the name of the user and group you set above
-ExecStart=/usr/bin/calibre-server /mnt/librarian
+ExecStart=/usr/bin/calibre-server /mnt/librarian --enable-auth --userdb="/home/librarian/.config/calibre/server-users.sqlite"
 
 Restart=on-failure
 #If it crashes or has certain problems, it will try to restart

@@ -11,3 +11,6 @@ ansible_ssh_private_key_file='~/.ssh/pve-server'
 
 [samba]
 10.0.0.202
+
+[vscode-server]
+10.0.0.203

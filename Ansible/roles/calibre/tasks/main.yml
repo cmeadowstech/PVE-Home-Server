@@ -4,6 +4,7 @@
     pkg:
       - calibre
       - python3-pip
+      - expect
 
 - name: Install pip dependencies
   ansible.builtin.pip:
@@ -22,6 +23,10 @@
   ansible.builtin.template:
     src: calibre-server.service.j2
     dest: /etc/systemd/system/calibre-server.service
+
+- name: Create calibre user
+  ansible.builtin.shell: calibre-server --userdb /home/librarian/.config/calibre/server-users.sqlite --manage-users -- add {{ user }} {{ password }}
+  ignore_errors: true
 
 - name: Make sure calibre-web is running
   ansible.builtin.systemd:

@@ -8,3 +8,6 @@ shares:
 
     - name: librarian
       mount: /mnt/pve-share/Media/Books
+
+    - name: vscode-server
+      mount: /mnt/pve-share/Git

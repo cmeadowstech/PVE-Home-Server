@@ -1,2 +1,5 @@
 ---
-# handlers file for calibre
+- name: Restart calibre
+  ansible.builtin.service:
+    name: calibre-server
+    state: restarted

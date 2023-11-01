@@ -1,0 +1,37 @@
+---
+- name: Setup VS Code Server
+  hosts: vscode-server
+  vars:
+    user: vscode-server
+  roles:
+    - update
+    - fstab
+
+  tasks:
+    - name: Install apt dependencies
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400 # One day
+        pkg:
+          - python3-pip
+          - gpg
+
+    - name: Download HashiCorp GPG key
+      ansible.builtin.get_url:
+        url: https://apt.releases.hashicorp.com/gpg
+        dest: /usr/share/keyrings/hashicorp-archive-keyring.asc
+        mode: '0644'
+
+    - name: Add HashiCorp repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.asc] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install tools
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400 # One day
+        pkg:
+          - ansible
+          - terraform
+          - azure-cli

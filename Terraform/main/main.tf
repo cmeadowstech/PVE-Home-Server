@@ -17,7 +17,7 @@ module "pihole" {
   hostname     = "pihole"
   cores        = 2
   memory       = 512
-  ip           = "10.0.0.201/24"
+  ip           = "10.0.0.201/32"
   password     = var.password
   unprivileged = true
 }
@@ -28,7 +28,18 @@ module "samba" {
   hostname     = "samba"
   cores        = 1
   memory       = 2048
-  ip           = "10.0.0.202/24"
+  ip           = "10.0.0.202/32"
+  password     = var.password
+  unprivileged = false
+}
+
+module "vscode-server" {
+  source = "../modules/lxc"
+
+  hostname     = "vscode-server"
+  cores        = 4
+  memory       = 8192
+  ip           = "10.0.0.203/32"
   password     = var.password
   unprivileged = false
 }

@@ -7,19 +7,19 @@
 
 - name: Ensure group "{{ user }}" exists
   ansible.builtin.group:
-    name: librarian
+    name: "{{ user }}"
     state: present
 
 - name: Ensure user "{{ user }}" exists
   ansible.builtin.user:
-    name: librarian
+    name: "{{ user }}"
     password: "{{ password | password_hash('sha512') }}"
     group: "{{ user }}"
   register: user_results
 
 - name: Create directory for mount point
   ansible.builtin.file:
-    path: /mnt/"{{ user }}"
+    path: /mnt/{{ user }}
     owner: "{{ user }}"
     group: "{{ user }}"
     state: directory
