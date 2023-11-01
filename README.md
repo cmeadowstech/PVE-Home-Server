@@ -43,4 +43,4 @@ While possibly not the best way to handle storage, I needed Samba to act as a NA
 
 To configure, there are two places to update:
 1. The var file Ansible/group_vars/samba/samba.yml contains the share created. There is one for the entire drive that my devices use, as well as shares more narrow in scope for other services running on PVE.
-2. The vault located at Ansible/group_vars/all/vault contains the users and passwords for the Samba users.
+2. The vault located at Ansible/group_vars/all/vault contains the users and passwords for the Samba users. For ease of use, these users are named the same as the shares.
