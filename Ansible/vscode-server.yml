@@ -27,6 +27,17 @@
         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.asc] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
         state: present
 
+    - name: Download Nodesource GPG key
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+        dest: /usr/share/keyrings/nodesource.asc
+        mode: '0644'
+
+    - name: Add Nodesource repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/nodesource.asc] https://deb.nodesource.com/node_20.x nodistro main"
+        state: present
+
     - name: Install tools
       ansible.builtin.apt:
         update_cache: true
@@ -35,3 +46,13 @@
           - ansible
           - terraform
           - azure-cli
+          - nodejs
+
+    - name: Copy SSH keys
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ item }}"
+        mode: '0400'
+      loop:
+        - ~/.ssh/pve-server
+        - ~/.ssh/pve-server.pub

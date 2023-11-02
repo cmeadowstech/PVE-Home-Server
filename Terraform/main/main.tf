@@ -43,3 +43,14 @@ module "vscode-server" {
   password     = var.password
   unprivileged = false
 }
+
+module "jellyfin" {
+  source = "../modules/lxc"
+
+  hostname     = "jellyfin"
+  cores        = 4
+  memory       = 2048
+  ip           = "10.0.0.204/32"
+  password     = var.password
+  unprivileged = false
+}
