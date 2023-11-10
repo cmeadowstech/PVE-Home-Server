@@ -54,3 +54,14 @@ module "jellyfin" {
   password     = var.password
   unprivileged = false
 }
+
+module "postgres" {
+  source = "../modules/lxc"
+
+  hostname     = "postgres"
+  cores        = 1
+  memory       = 1024
+  ip           = "10.0.0.205/32"
+  password     = var.password
+  unprivileged = true
+}
