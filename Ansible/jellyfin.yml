@@ -6,6 +6,7 @@
   roles:
     - update
     - fstab
+    - tailscale
 
   tasks:
     - name: Download Jellyfin GPG key

@@ -65,3 +65,36 @@ module "postgres" {
   password     = var.password
   unprivileged = true
 }
+
+module "redis" {
+  source = "../modules/lxc"
+
+  hostname     = "redis"
+  cores        = 1
+  memory       = 1024
+  ip           = "10.0.0.206/32"
+  password     = var.password
+  unprivileged = false
+}
+
+module "flame" {
+  source = "../modules/lxc"
+
+  hostname     = "flame"
+  cores        = 1
+  memory       = 1024
+  ip           = "10.0.0.210/32"
+  password     = var.password
+  unprivileged = true
+}
+
+module "grafana" {
+  source = "../modules/lxc"
+
+  hostname     = "grafana"
+  cores        = 1
+  memory       = 1024
+  ip           = "10.0.0.207/32"
+  password     = var.password
+  unprivileged = true
+}

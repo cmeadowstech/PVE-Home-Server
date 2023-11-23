@@ -1,0 +1,13 @@
+[Unit]
+Description=Flame
+After=network.target
+
+[Service]
+WorkingDirectory=/src/flame
+ExecStart=/usr/bin/node /src/flame/server.js
+User=root
+Type=simple
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

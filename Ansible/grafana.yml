@@ -1,0 +1,51 @@
+---
+- name: Setup Grafana
+  hosts: grafana
+  gather_facts: false
+  roles:
+    - update
+
+  tasks:
+    - name: Install apt dependencies
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - software-properties-common
+    
+    - name: Download Grafana GPG key
+      ansible.builtin.get_url:
+        url: https://apt.grafana.com/gpg.key
+        dest: /usr/share/keyrings/grafana.asc
+        mode: '0644'
+
+    - name: Add Grafana repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/grafana.asc] https://apt.grafana.com stable main"
+        state: present
+
+    - name: Download InfluxDB GPG key
+      ansible.builtin.get_url:
+        url: https://repos.influxdata.com/influxdata-archive_compat.key
+        dest: /usr/share/keyrings/influxdata.asc
+        mode: '0644'
+
+    - name: Add InfluxDB repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/influxdata.asc] https://repos.influxdata.com/debian stable main"
+        state: present
+    
+    - name: Install tools
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400 # One day
+        pkg:
+          - grafana
+          - influxdb2
+          - telegraf
+    
+    - name: Make sure flame is running
+      ansible.builtin.systemd:
+        state: started
+        enabled: true
+        name: grafana-server
+        daemon_reload: true
