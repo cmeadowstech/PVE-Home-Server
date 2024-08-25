@@ -1,0 +1,124 @@
+---
+- name: Setup containers
+  hosts: containers
+  module_defaults:
+    group/community.docker.docker:
+      timeout: 120
+  vars:
+    user: root
+  roles:
+    - update
+    - fstab
+    - tailscale
+
+  tasks:
+    - name: Download docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /usr/share/keyrings/docker-keyring.asc
+        mode: '0644'
+
+    - name: Add docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/docker-keyring.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install apt dependencies
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400 # One day
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+
+    - name: Create app folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+      - /src/npm/data
+      - /src/npm/letsencrypt
+      - /src/actual
+      - /src/glance
+      - /src/arr
+
+    - name: Copy docker files
+      ansible.builtin.copy:
+        src: "{{ item }}_docker-compose.yml"
+        dest: "/src/{{ item }}/docker-compose.yml"
+      with_items:
+        - npm
+        - arr
+
+    - name: Clone changedetection repro
+      ansible.builtin.git:
+        repo: https://github.com/dgtlmoon/changedetection.io.git
+        dest: /src/changedetection
+        clone: true
+        force: true
+    
+    - name: Copy changedetection docker files
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /src/changedetection/{{ item }}
+      with_items:
+      - docker-compose.yml
+      - Dockerfile
+
+    - name: Create and start changedetection
+      community.docker.docker_compose_v2:
+        project_src: /src/changedetection
+      register: output
+
+    - name: Create and start apps from docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "/src/{{ item }}"
+      register: output
+      with_items:
+        - npm
+        - arr
+
+    - name: Create flaresolverr container
+      community.docker.docker_container:
+        name: flaresolverr
+        image: ghcr.io/flaresolverr/flaresolverr:latest
+        published_ports: 8191:8191
+        restart_policy: "unless-stopped"
+
+    - name: Create Actual container
+      community.docker.docker_container:
+        name: actual
+        image: actualbudget/actual-server:latest
+        published_ports: 5006:5006
+        restart_policy: "unless-stopped"
+        volumes:
+          - /mnt/root/Documents/actual:/data
+        env:
+          ACTUAL_TRUSTED_PROXIES: "100.85.222.109/32"
+
+    - name: Copy glance files
+      ansible.builtin.copy:
+        src: "glance.yml"
+        dest: "/src/glance/glance.yml"
+      notify: Restart glance
+
+    - name: Create Glance container
+      community.docker.docker_container:
+        name: glance
+        image: glanceapp/glance
+        published_ports: 8080:8080
+        restart_policy: "unless-stopped"
+        volumes:
+          - /src/glance/glance.yml:/app/glance.yml
+          - /etc/timezone:/etc/timezone:ro
+          - /etc/localtime:/etc/localtime:ro
+
+  handlers:
+    - name: Restart glance
+      community.docker.docker_container:
+        name: glance
+        restart: true
+    

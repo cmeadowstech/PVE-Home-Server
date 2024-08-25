@@ -6,14 +6,26 @@
       - iptables
     cache_valid_time: 86400 # One day
 
-- name: Install tailscale
-  ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+- name: Determine if tailscale is already installed
+  stat:
+    path: "/usr/bin/tailscale"
+    follow: no
+    get_checksum: no
+    get_mime: no
+  register: tailscale_installed
+  changed_when: false
 
-- name: Ensure tailscale is running
-  ansible.builtin.service:
-    name: tailscaled
-    state: started
-    enabled: true
+- block:
+  - name: Install tailscale
+    ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
 
-- name: Start tailscale
-  ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --accept-dns=false
+  - name: Ensure tailscale is running
+    ansible.builtin.service:
+      name: tailscaled
+      state: started
+      enabled: true
+
+  - name: Start tailscale
+    ansible.builtin.command: tailscale up --authkey={{ tailscale_auth_key }} --accept-dns=false
+
+  when: tailscale_installed.stat.exists == False

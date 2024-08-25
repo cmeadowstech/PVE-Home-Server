@@ -1,0 +1,65 @@
+theme:
+  background-color: 50 1 6
+  primary-color: 24 97 58
+  negative-color: 209 88 54
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: calendar
+
+          - type: rss
+            limit: 10
+            collapse-after: 3
+            cache: 3h
+            feeds:
+              - url: https://ciechanow.ski/atom.xml
+              - url: https://www.joshwcomeau.com/rss.xml
+                title: Josh Comeau
+              - url: https://samwho.dev/rss.xml
+              - url: https://awesomekling.github.io/feed.xml
+              - url: https://ishadeed.com/feed.xml
+                title: Ahmad Shadeed
+
+      - size: full
+        widgets:
+          - type: hacker-news
+
+          - type: videos
+            channels:
+              - UCsaGKqPZnGp_7N80hcHySGQ # Tasting History
+              - UCtHaxi4GTYDpJgMSGy7AeSw # Michael Reeves
+
+          - type: reddit
+            subreddit: selfhosted
+
+      - size: small
+        widgets:
+          - type: weather
+            units: imperial
+            location: Charlotte, North Carolina, United States
+  
+          - type: monitor
+            cache: 1m
+            title: Services
+            sites:
+              - title: Jellyfin
+                url: http://10.0.0.204:8096
+                icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/jellyfin.svg
+              - title: Sonarr
+                url: http://10.0.0.12:8989/ping
+                icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png
+              - title: Radarr
+                url: http://10.0.0.6:7878/ping
+                icon: https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets/assets/radarr.svg
+              - title: Prowlarr
+                url: http://10.0.0.8:9696/ping
+                icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png
+              - title: Transmission
+                url: http://10.0.0.208:9091
+                icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/transmission.png
+              - title: Change Detection
+                url: http://10.0.0.209:5000/
+                icon: https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets/assets/changedetection.svg

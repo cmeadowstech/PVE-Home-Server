@@ -1,0 +1,8 @@
+---
+- name: Setup test
+  hosts: containers
+  module_defaults:
+    group/community.docker.docker:
+      timeout: 120
+  roles:
+    - hoarder

@@ -1,0 +1,15 @@
+---
+- name: Setup Technitium
+  hosts: technitium
+  roles:
+    - update
+
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - curl
+        cache_valid_time: 86400 # One day
+
+    - name: Run automated technitium installer
+      ansible.builtin.shell: curl -sSL https://download.technitium.com/dns/install.sh | bash

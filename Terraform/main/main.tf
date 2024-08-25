@@ -11,6 +11,17 @@ provider "proxmox" {
   pm_api_url = "https://10.0.0.100:8006/api2/json"
 }
 
+module "technitium" {
+  source = "../modules/lxc"
+
+  hostname     = "technitium"
+  cores        = 2
+  memory       = 512
+  ip           = "10.0.0.234/32"
+  password     = var.password
+  unprivileged = true
+}
+
 module "pihole" {
   source = "../modules/lxc"
 
@@ -98,3 +109,5 @@ module "grafana" {
   password     = var.password
   unprivileged = true
 }
+
+# Don't use 10.0.0.208 - set manually for transmission

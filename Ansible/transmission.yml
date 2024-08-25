@@ -1,0 +1,8 @@
+---
+- name: Setup Transmission
+  hosts: transmission
+  vars:
+    user: debian-transmission
+  roles:
+    - update
+    - fstab
