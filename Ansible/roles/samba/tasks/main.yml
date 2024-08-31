@@ -38,3 +38,17 @@
   ansible.builtin.shell: setfacl -R -m u:{{ item.name }}:rwx {{ item.mount }}
   with_items:
     - "{{ shares }}" # This works instead of {{ users }} because mount names are same as usernames
+
+- name: Copy backup.sh script to the target server
+  copy:
+    src: backup.sh
+    dest: /usr/local/bin/backup.sh
+    mode: '0755'  # Make the script executable
+
+- name: Ensure the cron job exists to run backup.sh once a day
+  cron:
+    name: "Daily Backup"
+    job: "/usr/local/bin/backup.sh"
+    minute: "0"
+    hour: "2"  # This sets the job to run at 2:00 AM every day
+    user: root  # Run the cron job as the root user

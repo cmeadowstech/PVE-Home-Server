@@ -59,7 +59,7 @@
         dest: /src/changedetection
         clone: true
         force: true
-    
+
     - name: Copy changedetection docker files
       ansible.builtin.copy:
         src: "{{ item }}"
@@ -115,6 +115,14 @@
           - /src/glance/glance.yml:/app/glance.yml
           - /etc/timezone:/etc/timezone:ro
           - /etc/localtime:/etc/localtime:ro
+
+  post_tasks:
+    - name: Run roles at the end
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      with_items:
+        - hoarder
+        - authentik
 
   handlers:
     - name: Restart glance

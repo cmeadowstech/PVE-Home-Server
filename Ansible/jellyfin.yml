@@ -19,19 +19,6 @@
       ansible.builtin.apt_repository:
         repo: "deb [signed-by=/usr/share/keyrings/jellyfin_team.asc] https://repo.jellyfin.org/debian {{ ansible_distribution_release }} main"
         state: present
-    
-    # https://rocmdocs.amd.com/en/latest/deploy/linux/quick_start.html#ubuntu
-
-    - name: Download Radeon GPG key
-      ansible.builtin.get_url:
-        url: https://repo.radeon.com/rocm/rocm.gpg.key
-        dest: /usr/share/keyrings/rocm.asc
-        mode: '0644'
-
-    - name: Add Radeon repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/rocm.asc] https://repo.radeon.com/rocm/apt/debian jammy main"
-        state: present
 
     - name: Install jellyfin
       ansible.builtin.apt:
@@ -40,10 +27,6 @@
         pkg:
           - jellyfin
           - jellyfin-ffmpeg5
-          - vainfo
-          - mesa-va-drivers
-          - rocm-opencl-runtime
-          - qemu-guest-agent
     
     - name: Add {{ user }} to groups
       ansible.builtin.user:
