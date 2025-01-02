@@ -1,0 +1,91 @@
+---
+- name: Setup ePaper
+  hosts: paper
+  vars:
+    ePaper_dir: /src/ePaper
+  roles:
+    - update
+  become: true
+
+  tasks:
+    - name: Ensure required packages are installed
+      apt:
+        name:
+          - wget
+          - unzip
+          - make
+          - gcc
+          - build-essential
+        state: present
+        update_cache: yes
+
+    - name: Create app folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+      - "{{ ePaper_dir }}"
+
+    - name: Install waveshare library
+      block:
+      - name: Download bcm2835 source code
+        get_url:
+          url: http://www.airspayce.com/mikem/bcm2835/bcm2835-1.60.tar.gz
+          dest: /tmp/bcm2835-1.60.tar.gz
+
+      - name: Extract bcm2835 source code
+        unarchive:
+          src: /tmp/bcm2835-1.60.tar.gz
+          dest: /tmp
+          remote_src: yes
+
+      - name: Configure bcm2835
+        command: ./configure
+        args:
+          chdir: /tmp/bcm2835-1.60
+
+      - name: Build bcm2835
+        make:
+          chdir: /tmp/bcm2835-1.60
+
+      - name: Run checks for bcm2835
+        command: make check
+        args:
+          chdir: /tmp/bcm2835-1.60
+
+      - name: Install bcm2835
+        command: make install
+        args:
+          chdir: /tmp/bcm2835-1.60
+        become: yes
+
+    - name: Run a module inside a virtual environment
+      block:
+        - name: Upgrade pip, setuptools, and wheel in virtual environment
+          pip:
+            virtualenv: "{{ ePaper_dir }}/.venv"
+            name:
+              - pip
+              - setuptools
+              - wheel
+              - selenium
+              - webdriver-manager
+            state: latest
+            virtualenv_command: "python3 -m venv --system-site-packages"
+
+        # For some reason omni-epd is not correctly installing the RPI extra
+        - name: Install IT8951 from GitHub repository with Raspberry Pi dependencies in venv
+          ansible.builtin.pip:
+            name: git+https://github.com/GregDMeyer/IT8951.git#egg=IT8951[rpi]
+            virtualenv: "{{ ePaper_dir }}/.venv"
+            extra_args: --ignore-installed
+
+        - name: Install omni-epd in the virtual environment
+          pip:
+            virtualenv: "{{ ePaper_dir }}/.venv"
+            name: git+https://github.com/robweber/omni-epd.git#egg=omni-epd
+
+
+            # I HAD TO INSTALl GREG's IT8951 LIBRARY FROM SOURCE
+            # https://github.com/GregDMeyer/IT8951
+            # pip install ./[rpi] --ignore-installed

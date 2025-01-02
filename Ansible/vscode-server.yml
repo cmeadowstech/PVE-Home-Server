@@ -32,12 +32,12 @@
     - name: Download Nodesource GPG key
       ansible.builtin.get_url:
         url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
-        dest: /usr/share/keyrings/nodesource.asc
+        dest: /usr/share/keyrings/nodesource.gpg
         mode: '0644'
 
     - name: Add Nodesource repository
       ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/nodesource.asc] https://deb.nodesource.com/node_20.x nodistro main"
+        repo: "deb [signed-by=/usr/share/keyrings/nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main"
         state: present
 
     - name: Download dotnet GPG key

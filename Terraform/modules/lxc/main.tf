@@ -30,8 +30,7 @@ resource "proxmox_lxc" "lxc" {
   network {
     name   = "eth0"
     bridge = "vmbr0"
-    ip     = var.ip
-    gw     = "10.0.0.1"
+    ip     = "dhcp"
   }
 
   features {
@@ -39,7 +38,7 @@ resource "proxmox_lxc" "lxc" {
   }
 
   connection {
-    host        = cidrhost("${self.network[0].ip}", 0)
+    host        = "${var.hostname}.local"
     user        = "root"
     private_key = file(var.ssh_keys["priv"])
     agent       = false

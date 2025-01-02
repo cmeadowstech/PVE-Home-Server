@@ -1,0 +1,12 @@
+services:
+  magicmirror:
+    container_name: mm
+    user: root:root
+    image: karsten13/magicmirror:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt/root/config/{{ app_name }}/config:/opt/magic_mirror/config
+      - /mnt/root/config/{{ app_name }}/modules:/opt/magic_mirror/modules
+      - /mnt/root/config/{{ app_name }}/css:/opt/magic_mirror/css
+    ports:
+      - {{ port }}:8080

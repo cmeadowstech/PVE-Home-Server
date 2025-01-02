@@ -1,0 +1,65 @@
+---
+- name: Set app variables
+  set_fact:
+    app_name: "paperless"
+    port: "8010"
+
+- name: Configure postgres database
+  delegate_to: postgres
+  become: true
+  become_user: postgres
+  block:
+    - name: Create postgres user
+      community.postgresql.postgresql_user:
+        name: "{{ app_name }}"
+        password: "{{ password }}"
+
+    - name: Create postgres database {{ item }}
+      community.postgresql.postgresql_db:
+        name: "{{ item }}"
+        owner: "{{ app_name }}"
+        encoding: UTF-8
+        template: template0
+      with_items:
+        - "{{ app_name }}"
+
+- name: Configure {{ app_name }}
+  block:
+    - name: Create app folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+      - /src/{{ app_name }}
+
+    - name: Copy .env file
+      ansible.builtin.copy:
+        src: ".env"
+        dest: "/src/{{ app_name }}/.env"
+
+    - name: Copy docker files
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - src: "{{ app_name }}_docker-compose.yml.j2"
+          dest: "/src/{{ app_name }}/docker-compose.yml"
+        - src: "docker-compose.env.j2"
+          dest: "/src/{{ app_name }}/docker-compose.env"
+
+    - name: Create and start {{ app_name }}
+      community.docker.docker_compose_v2:
+        project_src: /src/{{ app_name }}
+
+    - name: Check if the {{ app_name }}.local resolves
+      getent:
+        database: hosts
+        key: "{{ app_name }}.local"
+      register: hostname_check
+      ignore_errors: yes
+
+    - name: Run script to add {{ app_name }}.local to technitium
+      script: technitium_script.sh -h {{ app_name }} -i {{ ansible_ens18.ipv4.address }}
+      when: hostname_check.failed
+      environment:
+        TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"

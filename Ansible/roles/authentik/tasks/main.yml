@@ -1,5 +1,5 @@
 ---
-- name: Set a variable
+- name: Set app variables
   set_fact:
     app_name: "authentik"
     port: "9000"

@@ -1,0 +1,41 @@
+---
+- name: Set app variables
+  set_fact:
+    app_name: "rsshub"
+    port: "1200"
+
+- name: Configure {{ app_name }}
+  block:
+    - name: Create app folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+      - /src/{{ app_name }}
+      - /mnt/root/config/{{ app_name }}
+
+    - name: Clone forked git repo {{ app_name }}
+      ansible.builtin.git:
+        repo: https://github.com/cmeadowstech/RSSHub.git
+        dest: /src/{{ app_name }}
+        clone: true
+        force: true
+      register: git_result
+
+    - name: Create and start {{ app_name }}
+      community.docker.docker_compose_v2:
+        project_src: /src/{{ app_name }}
+      when: git_result.changed
+
+    - name: Check if the {{ app_name }}.local resolves
+      getent:
+        database: hosts
+        key: "{{ app_name }}.local"
+      register: hostname_check
+      ignore_errors: yes
+
+    - name: Run script to add {{ app_name }}.local to technitium
+      script: technitium_script.sh -h {{ app_name }} -i {{ ansible_ens18.ipv4.address }}
+      when: hostname_check.failed
+      environment:
+        TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"

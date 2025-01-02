@@ -5,4 +5,4 @@
     group/community.docker.docker:
       timeout: 120
   roles:
-    - hoarder
+    - arr

@@ -1,0 +1,20 @@
+---
+- name: Configure postgres database
+  delegate_to: postgres
+  become: true
+  become_user: postgres
+  block:
+    - name: Create postgres user
+      community.postgresql.postgresql_user:
+        name: arr
+        password: "{{ password }}"
+
+    - name: Create postgres database {{ item }}
+      community.postgresql.postgresql_db:
+        name: "{{ item }}"
+        owner: arr
+      with_items:
+        - sonarr-main
+        - sonarr-log
+        - radarr-main
+        - radarr-log

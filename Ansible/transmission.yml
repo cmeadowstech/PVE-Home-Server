@@ -6,3 +6,74 @@
   roles:
     - update
     - fstab
+
+  tasks:
+    - name: Install software-properties-common
+      ansible.builtin.apt:
+        pkg:
+         - software-properties-common
+
+    - name: Add contrib non-free repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://deb.debian.org/debian/ {{ ansible_distribution_release }} main contrib non-free"
+        state: present
+
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - unrar
+          - libavahi-compat-libdnssd1
+          - p7zip-full
+          - python3-notify2
+        cache_valid_time: 86400 # One day
+        update_cache: true
+
+    - name: Install sabnzbdplus
+      ansible.builtin.apt:
+        pkg:
+          - sabnzbdplus
+        cache_valid_time: 86400 # One day
+        force: true
+    
+    - name: Set sabnzbdplus systemd
+      ansible.builtin.lineinfile:
+        path: /etc/default/sabnzbdplus
+        regexp: "{{ item.reg }}"
+        line: "{{ item.line }}"
+      with_items:
+        - reg: '^USER'
+          line: "USER=debian-transmission"
+        - reg: '^HOST'
+          line: "HOST={{ ansible_eth0.ipv4.address }}"
+      notify: Restart sabnzbdplus
+
+    # Probably not necessary with the above task
+    - name: Set sabnzbdplus config
+      ansible.builtin.lineinfile:
+        path: /root/.sabnzbd/sabnzbd.ini
+        regexp: "{{ item.reg }}"
+        line: "{{ item.line }}"
+      with_items:
+        - reg: '^host'
+          line: "host = {{ ansible_eth0.ipv4.address }}"
+      notify: Restart sabnzbdplus
+
+    - name: Ensure debian-transmission is owner of /var/lib/transmission-daemon
+      ansible.builtin.file:
+        path: /var/lib/transmission-daemon
+        owner: debian-transmission
+        group: debian-transmission
+        recurse: yes
+        state: directory
+    
+    - name: Ensure sabnzbdplus is started
+      ansible.builtin.service:
+        name: sabnzbdplus
+        state: started
+        enabled: true
+  
+  handlers:
+    - name: Restart sabnzbdplus
+      ansible.builtin.service:
+        name: sabnzbdplus
+        state: restarted

@@ -49,17 +49,42 @@ pages:
                 url: http://10.0.0.204:8096
                 icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/jellyfin.svg
               - title: Sonarr
-                url: http://10.0.0.12:8989/ping
+                url: http://10.0.0.209:8989/ping
                 icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png
               - title: Radarr
-                url: http://10.0.0.6:7878/ping
+                url: http://10.0.0.209:7878/ping
                 icon: https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets/assets/radarr.svg
               - title: Prowlarr
-                url: http://10.0.0.8:9696/ping
+                url: http://10.0.0.233:9696/ping
                 icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png
               - title: Transmission
                 url: http://10.0.0.208:9091
                 icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/transmission.png
+                alt-status-codes:
+                  - 401
               - title: Change Detection
                 url: http://10.0.0.209:5000/
                 icon: https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets/assets/changedetection.svg
+
+  - name: Events
+    columns:
+      - size: full
+        widgets:
+          - type: rss
+            limit: 10
+            collapse-after: 3
+            cache: 3h
+            style: detailed-list
+            feeds:
+              - url: http://rsshub.local:1200/cltcomedyzone/events
+              - url: http://vscode-server.local:1200/blumenthalarts/events
+
+      - size: full
+        widgets:
+          - type: rss
+            limit: 10
+            collapse-after: 3
+            cache: 3h
+            feeds:
+              - url: http://rsshub.local:1200/cltcomedyzone/events
+              - url: http://vscode-server.local:1200/blumenthalarts/events

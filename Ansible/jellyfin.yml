@@ -27,7 +27,7 @@
         pkg:
           - jellyfin
           - jellyfin-ffmpeg5
-    
+
     - name: Add {{ user }} to groups
       ansible.builtin.user:
         name: jellyfin

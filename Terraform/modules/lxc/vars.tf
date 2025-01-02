@@ -28,11 +28,6 @@ variable "memory" {
   type        = number
 }
 
-variable "ip" {
-  description = "IP address, ending in /24"
-  type        = string
-}
-
 variable "unprivileged" {
   description = "If the LXC is privileged or not"
   type        = bool
