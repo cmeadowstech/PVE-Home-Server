@@ -1,0 +1,15 @@
+---
+- name: Modfy LXC .conf
+  hosts: pve_server
+  tasks:
+    - name: Add LXC configuration entries
+      ansible.builtin.lineinfile:
+        path: "/etc/pve/lxc/{{ id }}.conf"
+        line: "{{ item }}"
+        state: present
+      with_items: "{{ lines }}"
+      register: config_changes
+
+    - name: Restart LXC
+      ansible.builtin.command: pct reboot {{ id }}
+      when: config_changes.changed

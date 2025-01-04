@@ -1,0 +1,2 @@
+nvidia_version: "550.142"
+nvidia_installer: "NVIDIA-Linux-x86_64-{{ nvidia_version }}.run"

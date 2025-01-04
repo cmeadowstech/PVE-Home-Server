@@ -39,3 +39,9 @@ variable "nesting" {
   type        = bool
   default     = false
 }
+
+variable "storage_size" {
+  description = "How much storage to give the LXC"
+  type        = string
+  default     = "8G"
+}

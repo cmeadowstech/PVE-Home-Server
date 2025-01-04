@@ -2,15 +2,15 @@ terraform {
   required_providers {
     proxmox = {
       source  = "Telmate/proxmox"
-      version = "2.9.14"
+      version = "3.0.1-rc4"
     }
   }
 }
 
 resource "proxmox_lxc" "lxc" {
-  target_node  = "cmeadows"
+  target_node  = "pve"
   hostname     = var.hostname
-  ostemplate   = "local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst"
+  ostemplate   = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
   ostype       = "debian"
   cores        = var.cores
   memory       = var.memory
@@ -24,7 +24,7 @@ resource "proxmox_lxc" "lxc" {
   // Terraform will crash without rootfs defined
   rootfs {
     storage = "local-lvm"
-    size    = "8G"
+    size    = var.storage_size
   }
 
   network {
