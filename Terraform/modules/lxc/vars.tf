@@ -45,3 +45,15 @@ variable "storage_size" {
   type        = string
   default     = "8G"
 }
+
+variable "gateway" {
+  description = "IPv4 gateway address"
+  type        = string
+  default     = ""
+}
+
+variable "ipv4" {
+  description = "Static IPv4 address"
+  type        = string
+  default     = "dhcp"
+}

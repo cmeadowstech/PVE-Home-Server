@@ -6,15 +6,6 @@
   roles:
     - update
     - dotnet
-  tasks:
-  - name: Get Proxmox LXC container ID
-    ansible.builtin.shell: awk -F'vm--' '/pve-vm--/{print $2}' /proc/self/mountinfo | cut -d'-' -f1
-    register: container_id
-    changed_when: false
-
-  - name: Set container ID as host fact
-    ansible.builtin.set_fact:
-      container_id_fact: "{{ container_id.stdout }}"
 
 - name: Update LXC .conf
   ansible.builtin.import_playbook: lxc_conf.yml
@@ -30,7 +21,7 @@
       - "lxc.mount.entry: /dev/nvidia-modeset dev/nvidia-modeset none bind,optional,create=file"
       - "lxc.mount.entry: /dev/nvidia-uvm dev/nvidia-uvm none bind,optional,create=file"
       - "lxc.mount.entry: /dev/nvidia-uvm-tools dev/nvidia-uvm-tools none bind,optional,create=file"
-      - "mp0: /storage/Plex,mp=/mnt/media"
+      - "mp0: /storage/streaming,mp=/mnt/media"
 
 - name: Install NVidia drivers
   hosts: jellyfin

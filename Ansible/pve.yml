@@ -198,9 +198,9 @@
       ansible.builtin.lineinfile:
         path: /etc/default/grub
         regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
-        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet consoleblank=0 console=tty0"'
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet consoleblank=0 console=tty0 nvidia-drm.modeset=1"'
         backup: true
-      notify: 
+      notify:
         - Update grub
         - Reboot system
 
@@ -208,10 +208,8 @@
     - name: Update grub
       ansible.builtin.command: update-grub
 
+    - name: Update initramfs
+      ansible.builtin.command: update-initramfs -u
+
     - name: Reboot system
       ansible.builtin.reboot:
-        msg: "Rebooting to apply GRUB changes"
-        connect_timeout: 5
-        reboot_timeout: 300
-        pre_reboot_delay: 0
-        post_reboot_delay: 30

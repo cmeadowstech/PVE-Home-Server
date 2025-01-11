@@ -7,6 +7,15 @@ terraform {
   }
 }
 
+locals {
+  network = {
+    name   = "eth0"
+    bridge = "vmbr1"
+    ip     = var.ipv4
+    gw     = var.gateway
+  }
+}
+
 resource "proxmox_lxc" "lxc" {
   target_node  = "pve"
   hostname     = var.hostname
@@ -27,10 +36,14 @@ resource "proxmox_lxc" "lxc" {
     size    = var.storage_size
   }
 
-  network {
-    name   = "eth0"
-    bridge = "vmbr0"
-    ip     = "dhcp"
+  dynamic "network" {
+    for_each = [local.network]
+    content {
+      name   = network.value.name
+      bridge = network.value.bridge
+      ip     = network.value.ip
+      gw     = network.value.gw
+    }
   }
 
   features {
@@ -38,7 +51,11 @@ resource "proxmox_lxc" "lxc" {
   }
 
   connection {
-    host        = "${var.hostname}.local"
+    host        = (
+        local.network.ip == "dhcp" 
+        ? "${var.hostname}.ged" 
+        : split("/", local.network.ip)[0]
+    )
     user        = "root"
     private_key = file(var.ssh_keys["priv"])
     agent       = false

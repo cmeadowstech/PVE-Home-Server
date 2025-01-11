@@ -45,3 +45,12 @@ ansible_ssh_private_key_file='~/.ssh/linode'
 
 [paper]
 paper.local ansible_user=cmeadows
+
+[steam]
+steam.local
+
+[test]
+10.0.10.15
+
+[dns]
+dns.local

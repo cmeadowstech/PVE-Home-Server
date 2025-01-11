@@ -15,7 +15,21 @@ provider "proxmox" {
   pm_debug            = true
 }
 
+module "technitium" {
+  source = "../modules/lxc"
+
+  hostname     = "dns"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  unprivileged = false
+  storage_size = "8G"
+  ipv4         = "10.0.11.2/24"
+  gateway      = "10.0.11.1"
+}
+
 module "ea" {
+  depends_on = [ module.technitium ]
   source = "../modules/lxc"
 
   hostname     = "ea"
@@ -24,4 +38,28 @@ module "ea" {
   password     = var.password
   unprivileged = true
   storage_size = "100G"
+}
+
+module "steam" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "steam"
+  cores        = 4
+  memory       = 8192
+  password     = var.password
+  unprivileged = false
+  storage_size = "50G"
+}
+
+module "test" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "test3"
+  cores        = 1
+  memory       = 2048
+  password     = var.password
+  unprivileged = false
+  storage_size = "8G"
 }

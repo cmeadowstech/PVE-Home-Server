@@ -1,15 +1,19 @@
 ---
 - name: Setup Technitium
-  hosts: technitium
+  hosts: dns.local
   roles:
     - update
-
   tasks:
-    - name: Install dependencies
-      ansible.builtin.apt:
-        pkg:
-          - curl
-        cache_valid_time: 86400 # One day
+    - name: Check if Technitium DNS service exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/dns.service
+      register: dns_service
 
     - name: Run automated technitium installer
       ansible.builtin.shell: curl -sSL https://download.technitium.com/dns/install.sh | bash
+
+    - name: Ensure Jellyfin service is enabled and started
+      ansible.builtin.systemd:
+        name: dns
+        state: started
+        enabled: yes

@@ -1,0 +1,64 @@
+---
+- name: Setup Jellyfin server
+  hosts: steam.local
+  vars:
+    user: jellyfin
+  roles:
+    - update
+
+- name: Update LXC .conf
+  ansible.builtin.import_playbook: lxc_conf.yml
+  vars:
+    id: "{{ hostvars['steam.local']['container_id_fact'] }}"
+    lines:
+      - "lxc.cgroup2.devices.allow: a"
+      - "lxc.cap.drop:"
+      - "lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir"
+      - "lxc.mount.entry: /dev/input mnt/input none bind,optional,create=dir"
+      - "lxc.mount.entry: /run/udev mnt/udev none bind,optional,create=dir"
+      - "dev0: /dev/uinput"
+      - "dev1: /dev/nvidia0"
+      - "dev2: /dev/nvidiactl"
+      - "dev3: /dev/nvidia-modeset"
+      - "dev4: /dev/nvidia-uvm"
+      - "dev5: /dev/nvidia-uvm-tools"
+      - "dev6: /dev/nvidia-caps/nvidia-cap1"
+      - "dev7: /dev/nvidia-caps/nvidia-cap2"
+
+- name: Install NVidia drivers
+  hosts: steam.local
+  vars:
+    user: steam.loocal
+  tasks:
+    - name: Check if NVIDIA driver is installed
+      ansible.builtin.command: nvidia-smi
+      register: nvidia_check
+      ignore_errors: true
+      check_mode: false
+      changed_when: false
+
+    # https://sluijsjes.nl/2024/05/18/coral-and-nvidia-passthrough-for-proxmox-lxc-to-install-frigate-video-surveillance-server/
+    - name: Download and install NVIDIA driver
+      when: nvidia_check.rc != 0
+      block:
+      - name: Download NVIDIA driver
+        ansible.builtin.get_url:
+          url: "https://download.nvidia.com/XFree86/Linux-x86_64/{{ nvidia_version }}/{{ nvidia_installer }}"
+          dest: "/tmp/{{ nvidia_installer }}"
+          mode: '0755'
+
+      - name: Install NVIDIA driver
+        ansible.builtin.command:
+          cmd: "/tmp/{{ nvidia_installer }} --silent --no-kernel-module"
+        register: nvidia_install
+        failed_when: 
+          - nvidia_install.rc != 0 
+          - "'ERROR: The Nouveau kernel driver is currently in use by your system' not in nvidia_install.stderr"
+
+      - name: Clean up installer
+        ansible.builtin.file:
+          path: "/tmp/{{ nvidia_installer }}"
+          state: absent
+
+      - name: Reboot system
+        ansible.builtin.reboot:
