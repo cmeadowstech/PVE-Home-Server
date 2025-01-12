@@ -1,0 +1,7 @@
+---
+- name: Modfy LXC .conf
+  hosts: monitor.home
+  roles:
+    - update
+    - netdata
+  tasks:

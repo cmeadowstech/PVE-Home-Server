@@ -53,7 +53,7 @@ resource "proxmox_lxc" "lxc" {
   connection {
     host        = (
         local.network.ip == "dhcp" 
-        ? "${var.hostname}.ged" 
+        ? "${var.hostname}.home" 
         : split("/", local.network.ip)[0]
     )
     user        = "root"

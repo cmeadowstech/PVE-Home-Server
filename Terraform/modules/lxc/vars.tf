@@ -31,7 +31,7 @@ variable "memory" {
 variable "unprivileged" {
   description = "If the LXC is privileged or not"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "nesting" {

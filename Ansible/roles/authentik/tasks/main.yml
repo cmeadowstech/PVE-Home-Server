@@ -25,14 +25,14 @@
   community.docker.docker_compose_v2:
     project_src: /src/{{ app_name }}
 
-- name: Check if the {{ app_name }}.local resolves
+- name: Check if the {{ app_name }}.home resolves
   getent:
     database: hosts
-    key: "{{ app_name }}.local"
+    key: "{{ app_name }}.home"
   register: hostname_check
   ignore_errors: yes
 
-- name: Run script to add {{ app_name }}.local to technitium
+- name: Run script to add {{ app_name }}.home to technitium
   script: technitium_script.sh -h {{ app_name }} -i {{ ansible_ens18.ipv4.address }}
   when: hostname_check.failed
   environment:
@@ -46,6 +46,6 @@
       register: dokku_status
       ignore_errors: yes
 
-    - name: Run script to add {{ app_name }}.local to technitium
+    - name: Run script to add {{ app_name }}.home to technitium
       script: dokku_script.sh -h {{ app_name }} -i {{ ansible_tailscale0.ipv4.address }} -p {{ port }}
       when: dokku_status.failed

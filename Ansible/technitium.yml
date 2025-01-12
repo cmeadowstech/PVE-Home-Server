@@ -1,6 +1,6 @@
 ---
 - name: Setup Technitium
-  hosts: dns.local
+  hosts: dns.home
   roles:
     - update
   tasks:

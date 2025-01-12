@@ -28,38 +28,48 @@ module "technitium" {
   gateway      = "10.0.11.1"
 }
 
-module "ea" {
+module "video" {
   depends_on = [ module.technitium ]
   source = "../modules/lxc"
 
-  hostname     = "ea"
+  hostname     = "video"
   cores        = 6
   memory       = 8192
   password     = var.password
-  unprivileged = true
   storage_size = "100G"
 }
 
-module "steam" {
+module "games" {
   depends_on = [ module.technitium ]
   source = "../modules/lxc"
 
-  hostname     = "steam"
-  cores        = 4
+  hostname     = "games"
+  cores        = 8
   memory       = 8192
   password     = var.password
   unprivileged = false
-  storage_size = "50G"
+  storage_size = "300G"
+  # Nesting might need to be enabled manually post deployment
 }
 
-module "test" {
+module "download" {
   depends_on = [ module.technitium ]
   source = "../modules/lxc"
 
-  hostname     = "test3"
-  cores        = 1
+  hostname     = "download"
+  cores        = 2
   memory       = 2048
   password     = var.password
-  unprivileged = false
-  storage_size = "8G"
+  storage_size = "100G"
+}
+
+module "monitor" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "monitor"
+  cores        = 4
+  memory       = 4090
+  password     = var.password
+  storage_size = "25G"
 }
