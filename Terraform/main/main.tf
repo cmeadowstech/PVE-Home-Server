@@ -80,7 +80,18 @@ module "db" {
 
   hostname     = "db"
   cores        = 2
-  memory       = 4090
+  memory       = 4096
   password     = var.password
   storage_size = "25G"
+}
+
+module "storage" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "storage"
+  cores        = 1
+  memory       = 2048
+  password     = var.password
+  storage_size = "8G"
 }

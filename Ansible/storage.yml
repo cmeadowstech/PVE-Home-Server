@@ -1,0 +1,129 @@
+---
+- name: Setup samba
+  hosts: storage.home
+  vars:
+    user: cmeadows
+  roles:
+    - update
+  tasks:
+    - name: Add 45drives repository key
+      ansible.builtin.get_url:
+        url: https://repo.45drives.com/key/gpg.asc
+        dest: /usr/share/keyrings/45drives-archive-keyring.asc
+        mode: '0644'
+
+    - name: Add 45drives repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/45drives-archive-keyring.asc] https://repo.45drives.com/debian focal main"
+        filename: 45drives
+        state: present
+        update_cache: true
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - acl
+          - samba
+          - samba-common
+          - samba-common-bin
+          - samba-dsdb-modules
+          - samba-vfs-modules
+          - samba-libs
+          - libwbclient0
+          - winbind
+          - wsdd
+        state: present
+
+    - name: Install Cockpit packages
+      ansible.builtin.apt:
+        name:
+          - cockpit
+          - cockpit-identities
+          - cockpit-file-sharing
+          - cockpit-navigator
+        state: present
+        install_recommends: false
+
+    - name: Create Samba admin user
+      ansible.builtin.user:
+        name: "{{ user | lower }}"
+        comment: "Samba fileserver admin"
+        password: "{{ password | password_hash('sha512') }}"
+
+    - name: Configure Samba users.
+      ansible.builtin.shell: >
+        (pdbedit --user={{ user }} 2>&1 > /dev/null)
+        || (echo '{{ password }}'; echo '{{ password }}')
+        | smbpasswd -s -a {{ user }}
+      register: smbpasswd
+      changed_when: "'Added user' in smbpasswd.stdout"
+
+    - name: Copy smb.conf
+      ansible.builtin.template:
+        src: smb.conf.j2
+        dest: /etc/samba/smb.conf
+      notify:
+        - Restart samba
+
+    - name: Configure Samba template
+      ansible.builtin.copy:
+        dest: /etc/samba/import.template
+        content: |
+          [global]
+              workgroup = WORKGROUP
+              log file = /var/log/samba/log.%m
+              max log size = 1000
+              logging = file
+              panic action = /usr/share/samba/panic-action %d
+              log level = 3
+              server role = standalone server
+              obey pam restrictions = yes
+              unix password sync = yes
+              passwd program = /usr/bin/passwd %u
+              passwd chat = *Enter\snew\s*\password:* %n\n *Retype\snew\s*\spassword:* %n\n *password\supdated\ssuccessfully* .
+              pam password change = yes
+              map to guest = bad user
+              vfs objects = shadow_copy2 acl_xattr catia fruit streams_xattr
+              map acl inherit = yes
+              acl_xattr:ignore system acls = yes
+              shadow: snapdir = .zfs/snapshot
+              shadow: sort = desc
+              shadow: format = -%Y-%m-%d-%H%M
+              shadow: snapprefix = ^zfs-auto-snap_\(frequent\)\{0,1\}\(hourly\)\{0,1\}\(daily\)\{0,1\}\(weekly\)\{0,1\}\(monthly\)\{0,1\}
+              shadow: delimiter = -20
+              fruit:encoding = native
+              fruit:metadata = stream
+              fruit:zero_file_id = yes
+              fruit:nfs_aces = no
+        mode: '0644'
+
+    - name: Import Samba configuration
+      ansible.builtin.command:
+        cmd: net conf import /etc/samba/import.template
+
+    - name: Ensure Samba services are running
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - smbd
+        - nmbd
+        - wsdd
+
+  handlers:
+    - name: Restart samba
+      ansible.builtin.service:
+        name: "{{ item  }}"
+        state: restarted
+      with_items:
+        - smbd
+        - nmbd
+        - wsdd
+
+- name: Update LXC .conf
+  ansible.builtin.import_playbook: lxc_conf.yml
+  vars:
+    id: "{{ hostvars['storage.home']['container_id_fact'] }}"
+    lxc_config_block: |
+      mp0: /storage,mp=/mnt/storage

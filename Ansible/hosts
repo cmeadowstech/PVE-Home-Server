@@ -10,6 +10,7 @@ download.home
 monitor.home
 db.home
 dns.home
+storage.home
 
 [pve_server]
 10.0.10.2
