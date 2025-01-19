@@ -10,8 +10,8 @@
   ansible.builtin.import_playbook: lxc_conf.yml
   vars:
     id: "{{ hostvars['download.home']['container_id_fact'] }}"
-    lines:
-      - "mp0: /storage/Downloads,mp=/mnt/downloads"
+    lxc_config_block: |
+      mp0: /storage/Downloads,mp=/mnt/downloads
 
 - name: Setup downloaders
   hosts: download.home
@@ -34,6 +34,7 @@
       ansible.builtin.apt:
         pkg:
           - software-properties-common
+        update_cache: true
 
     - name: Add contrib non-free repository
       ansible.builtin.apt_repository:
@@ -81,23 +82,34 @@
           replace: 'password = "{{ password }}"'
       notify: Restart sabnzbdplus
 
-
-    # - name: Ensure debian-transmission is owner of /var/lib/transmission-daemon
-    #   ansible.builtin.file:
-    #     path: /var/lib/transmission-daemon
-    #     owner: debian-transmission
-    #     group: debian-transmission
-    #     recurse: yes
-    #     state: directory
-
     - name: Ensure sabnzbdplus is started
       ansible.builtin.service:
         name: sabnzbdplus
         state: started
         enabled: true
 
+    - name: Transmission
+      block:
+        - name: Install dependencies
+          ansible.builtin.apt:
+            pkg:
+              - transmission-cli
+              - transmission-common
+              - transmission-daemon
+
+        - name: Ensure sabnzbdplus is started
+          ansible.builtin.service:
+            name: transmission-daemon
+            state: started
+            enabled: true
+
   handlers:
     - name: Restart sabnzbdplus
       ansible.builtin.service:
         name: sabnzbdplus
         state: restarted
+    
+    - name: Restart transmission
+      ansible.builtin.service:
+        name: transmission-daemon
+        state: transmission-daemon

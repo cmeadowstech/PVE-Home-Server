@@ -1,6 +1,8 @@
 ---
 - name: Configure PVE Server
   hosts: pve_server
+  vars:
+    nvidia_driver: server
   roles:
     - update
   tasks:
@@ -115,125 +117,11 @@
               - pkg-config
               - intel-opencl-icd
 
-    - name: NVidia drivers
-    #   block:
-    #     - name: Create blacklist config for Nouveau
-    #       ansible.builtin.copy:
-    #         dest: /etc/modprobe.d/blacklist-nouveau.conf
-    #         content: |
-    #           blacklist nouveau
-    #           options nouveau modeset=0
-    #         mode: '0644'
-    #       register: blacklist_conf
-    #       notify:
-    #         - Update initramfs
-    #         - Reboot system
-
-    #     - name: Check if NVIDIA driver is installed
-    #       ansible.builtin.command: nvidia-smi
-    #       register: nvidia_check
-    #       ignore_errors: true
-    #       check_mode: false
-    #       changed_when: false
-
-    #     # https://sluijsjes.nl/2024/05/18/coral-and-nvidia-passthrough-for-proxmox-lxc-to-install-frigate-video-surveillance-server/
-    #     - name: Download and install NVIDIA driver
-    #       when: nvidia_check.rc != 0
-    #       block:
-    #         - name: Download NVIDIA driver
-    #           ansible.builtin.get_url:
-    #             url: "https://download.nvidia.com/XFree86/Linux-x86_64/{{ nvidia_version }}/{{ nvidia_installer }}"
-    #             dest: "/tmp/{{ nvidia_installer }}"
-    #             mode: '0755'
-
-    #         - name: Install NVIDIA driver
-    #           ansible.builtin.command:
-    #             cmd: "/tmp/{{ nvidia_installer }} --silent --no-questions --disable-nouveau"
-    #           register: nvidia_install
-    #           failed_when:
-    #             - nvidia_install.rc != 0
-    #             - "'ERROR: The Nouveau kernel driver is currently in use by your system' not in nvidia_install.stderr"
-
-    #         - name: Clean up installer
-    #           ansible.builtin.file:
-    #             path: "/tmp/{{ nvidia_installer }}"
-    #             state: absent
-
-    #     - name: Configure NVIDIA drivers and udev rules
-    #       block:
-    #         - name: Configure modules loading
-    #           ansible.builtin.copy:
-    #             dest: /etc/modules-load.d/modules.conf
-    #             content: |
-    #               # load nvidia modules
-    #               nvidia
-    #               nvidia_uvm
-    #               nvidia-drm
-    #               nvidia-uvm
-    #             mode: '0644'
-    #           register: modules_conf
-
-    #         - name: Update initramfs for all kernels
-    #           ansible.builtin.command:
-    #             cmd: update-initramfs -u -k all
-    #           when: modules_conf.changed
-
-    #         - name: Create NVIDIA udev rules
-    #           ansible.builtin.copy:
-    #             dest: /etc/udev/rules.d/70-nvidia.rules
-    #             content: |
-    #               KERNEL=="nvidia", RUN+="/bin/bash -c '/usr/bin/nvidia-smi -L && /bin/chmod 666 /dev/nvidia*'"
-    #               KERNEL=="nvidia_uvm", RUN+="/bin/bash -c '/usr/bin/nvidia-modprobe -c0 -u && /bin/chmod 0666 /dev/nvidia-uvm*'"
-    #               SUBSYSTEM=="module", ACTION=="add", DEVPATH=="/module/nvidia", RUN+="/usr/bin/nvidia-modprobe -m"
-    #             mode: '0644'
-
-    #         - name: Setup NVIDIA persistence service
-    #           block:
-    #             - name: Copy persistence service init file
-    #               ansible.builtin.copy:
-    #                 src: /usr/share/doc/NVIDIA_GLX-1.0/samples/nvidia-persistenced-init.tar.bz2
-    #                 dest: /tmp/nvidia-persistenced-init.tar.bz2
-    #                 remote_src: yes
-
-    #             - name: Extract persistence service files
-    #               ansible.builtin.unarchive:
-    #                 src: /tmp/nvidia-persistenced-init.tar.bz2
-    #                 dest: /tmp
-    #                 remote_src: yes
-
-    #             - name: Remove old service file if exists
-    #               ansible.builtin.file:
-    #                 path: /etc/systemd/system/nvidia-persistenced.service
-    #                 state: absent
-
-    #             - name: Install persistence service
-    #               ansible.builtin.command:
-    #                 cmd: /tmp/nvidia-persistenced-init/install.sh
-    #                 creates: /etc/systemd/system/nvidia-persistenced.service
-
-    #             - name: Enable and start persistence service
-    #               ansible.builtin.systemd:
-    #                 name: nvidia-persistenced
-    #                 state: started
-    #                 enabled: yes
-    #                 daemon_reload: yes
-
-    #             - name: Clean up temporary files
-    #               ansible.builtin.file:
-    #                 path: "{{ item }}"
-    #                 state: absent
-    #               loop:
-    #                 - /tmp/nvidia-persistenced-init.tar.bz2
-    #                 - /tmp/nvidia-persistenced-init
-    #           notify:
-    #             - Reboot system
-
-    #         - name: Verify NVIDIA driver installation
-    #           ansible.builtin.command:
-    #             cmd: nvidia-smi
-    #           register: nvidia_check
-    #           failed_when: nvidia_check.rc != 0
-    #           changed_when: false
+    - name: Run Nvidia role
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      with_items:
+        - nvidia
 
     - name: Configure Intel
       block:

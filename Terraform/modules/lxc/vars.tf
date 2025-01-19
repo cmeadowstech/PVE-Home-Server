@@ -57,3 +57,9 @@ variable "ipv4" {
   type        = string
   default     = "dhcp"
 }
+
+variable "ostemplate" {
+  description = "Template for LXC"
+  type        = string
+  default     = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
+}

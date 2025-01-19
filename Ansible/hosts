@@ -3,47 +3,16 @@ ansible_connection=ssh
 ansible_user=root
 ansible_ssh_private_key_file='~/.ssh/pve-server'
 
-[all]
+[earthsea]
 video.home
 games.home
 download.home
 monitor.home
+db.home
+dns.home
 
 [pve_server]
 10.0.10.2
-
-[pihole]
-10.0.0.201
-
-[samba]
-10.0.0.202
-
-[vscode-server]
-vscode-server.home
-
-[jellyfin]
-ea.home
-
-[postgres]
-postgres ansible_host=10.0.0.205
-
-[redis]
-10.0.0.206
-
-[grafana]
-10.0.0.207
-
-[transmission]
-10.0.0.208
-
-[flame]
-10.0.0.210
-
-[containers]
-10.0.0.209
-
-[technitium]
-10.0.0.234
 
 [vps]
 vps ansible_host=23.239.17.96
@@ -51,12 +20,3 @@ ansible_ssh_private_key_file='~/.ssh/linode'
 
 [paper]
 paper.home ansible_user=cmeadows
-
-[steam]
-games.home
-
-[test]
-games.home
-
-[dns]
-dns.home

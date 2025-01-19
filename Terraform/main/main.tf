@@ -73,3 +73,14 @@ module "monitor" {
   password     = var.password
   storage_size = "25G"
 }
+
+module "db" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "db"
+  cores        = 2
+  memory       = 4090
+  password     = var.password
+  storage_size = "25G"
+}

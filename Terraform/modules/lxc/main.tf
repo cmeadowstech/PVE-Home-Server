@@ -19,7 +19,7 @@ locals {
 resource "proxmox_lxc" "lxc" {
   target_node  = "pve"
   hostname     = var.hostname
-  ostemplate   = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
+  ostemplate   = var.ostemplate
   ostype       = "debian"
   cores        = var.cores
   memory       = var.memory
