@@ -1,9 +1,7 @@
 version: '3.2'
 services:
     changedetection:
-      build:
-        context: .
-        dockerfile: Dockerfile
+      image: ghcr.io/dgtlmoon/changedetection.io
       container_name: changedetection
       hostname: changedetection
       volumes:
@@ -11,28 +9,26 @@ services:
 # Configurable proxy list support, see https://github.com/dgtlmoon/changedetection.io/wiki/Proxy-configuration#proxy-list-support
 #        - ./proxies.json:/datastore/proxies.json
 
-      environment:
-          # Default listening port, can also be changed with the -p option
-        - PORT=5000
-
-        - PUID=1000
-        - PGID=1000
-    
-          # Log levels are in descending order. (TRACE is the most detailed one)
-          # Log output levels: TRACE, DEBUG(default), INFO, SUCCESS, WARNING, ERROR, CRITICAL
-        - LOGGER_LEVEL=DEBUG
-    
-          # Alternative WebDriver/selenium URL, do not use "'s or 's!
-        - WEBDRIVER_URL=http://browser-chrome:4444/wd/hub
-    
-          # WebDriver proxy settings webdriver_proxyType, webdriver_ftpProxy, webdriver_noProxy,
-          #                         webdriver_proxyAutoconfigUrl, webdriver_autodetect,
-          #                         webdriver_socksProxy, webdriver_socksUsername, webdriver_socksVersion, webdriver_socksPassword
-    
-          #       https://selenium-python.readthedocs.io/api.html#module-selenium.webdriver.common.proxy
-    
-          # Alternative Playwright URL, do not use "'s or 's!
-        - PLAYWRIGHT_DRIVER_URL=ws://playwright-chrome:3000
+  #    environment:
+  #        Default listening port, can also be changed with the -p option
+  #      - PORT=5000
+  #
+  #        Log levels are in descending order. (TRACE is the most detailed one)
+  #        Log output levels: TRACE, DEBUG(default), INFO, SUCCESS, WARNING, ERROR, CRITICAL
+  #      - LOGGER_LEVEL=TRACE
+  #
+  #       Alternative WebDriver/selenium URL, do not use "'s or 's!
+  #      - WEBDRIVER_URL=http://browser-chrome:4444/wd/hub
+  #
+  #       WebDriver proxy settings webdriver_proxyType, webdriver_ftpProxy, webdriver_noProxy,
+  #                                webdriver_proxyAutoconfigUrl, webdriver_autodetect,
+  #                                webdriver_socksProxy, webdriver_socksUsername, webdriver_socksVersion, webdriver_socksPassword
+  #
+  #             https://selenium-python.readthedocs.io/api.html#module-selenium.webdriver.common.proxy
+  #
+  #       Alternative target "Chrome" Playwright URL, do not use "'s or 's!
+  #       "Playwright" is a driver/librarythat allows changedetection to talk to a Chrome or similar browser.
+  #      - PLAYWRIGHT_DRIVER_URL=ws://sockpuppetbrowser:3000
   #
   #       Playwright proxy settings playwright_proxy_server, playwright_proxy_bypass, playwright_proxy_username, playwright_proxy_password
   #
@@ -59,26 +55,35 @@ services:
   #
   #        Absolute minimum seconds to recheck, overrides any watch minimum, change to 0 to disable
   #      - MINIMUM_SECONDS_RECHECK_TIME=3
+  #
+  #        If you want to watch local files file:///path/to/file.txt (careful! security implications!)
+  #      - ALLOW_FILE_URI=False
+  #
+  #        For complete privacy if you don't want to use the 'check version' / telemetry service
+  #      - DISABLE_VERSION_CHECK=true
+  #
+  #        A valid timezone name to run as (for scheduling watch checking) see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  #      - TZ=America/Los_Angeles
+  
       # Comment out ports: when using behind a reverse proxy , enable networks: etc.
       ports:
         - 5000:5000
       restart: unless-stopped
-
-     # Used for fetching pages via WebDriver+Chrome where you need Javascript support.
-     # Now working on arm64 (needs testing on rPi - tested on Oracle ARM instance)
-     # replace image with seleniarm/standalone-chromium:4.0.0-20211213
-     
-     # If WEBDRIVER or PLAYWRIGHT are enabled, changedetection container depends on that
-     # and must wait before starting (substitute "browser-chrome" with "playwright-chrome" if last one is used)
+      # Used for fetching pages via WebDriver+Chrome where you need Javascript support.
+      # Now working on arm64 (needs testing on rPi - tested on Oracle ARM instance)
+      # replace image with seleniarm/standalone-chromium:4.0.0-20211213
+      
+      # If WEBDRIVER or PLAYWRIGHT are enabled, changedetection container depends on that
+      # and must wait before starting (substitute "browser-chrome" with "playwright-chrome" if last one is used)
       depends_on:
-          playwright-chrome:
+          sockpuppetbrowser:
               condition: service_started
 
-
-     # Used for fetching pages via Playwright+Chrome where you need Javascript support.
+     # Sockpuppetbrowser is basically chrome wrapped in an API for allowing fast fetching of web-pages.
      # RECOMMENDED FOR FETCHING PAGES WITH CHROME
-    playwright-chrome:
-        hostname: playwright-chrome
+    sockpuppetbrowser:
+        hostname: sockpuppetbrowser
+        container_name: sockpuppetbrowser
         image: dgtlmoon/sockpuppetbrowser:latest
         cap_add:
             - SYS_ADMIN

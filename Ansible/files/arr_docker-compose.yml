@@ -1,4 +1,3 @@
-version: "3.2"
 services:
   radarr:
     container_name: radarr
@@ -10,14 +9,14 @@ services:
     ports:
       - 7878:7878
     environment:
-      - PUID=0
-      - PGID=0
+      - PUID=101111
+      - PGID=101111
       - TZ=America/New_York
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /mnt/root/config/radarr:/config
-      - /mnt/root/Transmission:/data/torrents
-      - /mnt/root/Plex:/data/media
+      - /mnt/config/radarr:/config
+      - /mnt/downloads:/mnt/downloads
+      - /mnt/media:/data/media
   sonarr:
     container_name: sonarr
     user: root:root
@@ -28,14 +27,14 @@ services:
     ports:
       - 8989:8989
     environment:
-      - PUID=0
-      - PGID=0
+      - PUID=101111
+      - PGID=101111
       - TZ=America/New_York
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /mnt/root/config/sonarr:/config
-      - /mnt/root/Transmission:/data/torrents
-      - /mnt/root/Plex:/data/media
+      - /mnt/config/sonarr:/config
+      - /mnt/downloads:/mnt/downloads
+      - /mnt/media:/data/media
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
@@ -46,7 +45,7 @@ services:
     ports:
       - 5055:5055
     volumes:
-      - /mnt/root/config/jellyseer:/app/config
+      - /mnt/config/jellyseer:/app/config
     restart: unless-stopped
   bazarr:
     container_name: bazarr
@@ -54,12 +53,24 @@ services:
     ports:
       - "6767:6767"
     environment:
-      - PUID=0
-      - PGID=0
+      - PUID=101111
+      - PGID=101111
       - UMASK=002
       - TZ=America/New_York
       - WEBUI_PORTS=6767/tcp,6767/udp
     volumes:
-      - /mnt/root/config/bazarr/config:/config
-      - /mnt/root/config/bazarr/data:/data
-      - /mnt/root/Plex:/data/media
+      - /mnt/config/bazarr/config:/config
+      - /mnt/config/bazarr/data:/data
+      - /mnt/media:/data/media
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=101111
+      - PGID=101111
+      - UMASK=002
+      - TZ=America/New_York
+    volumes:
+      - /mnt/config/prowlarr:/config

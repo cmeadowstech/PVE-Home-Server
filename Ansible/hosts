@@ -11,9 +11,16 @@ monitor.home
 db.home
 dns.home
 storage.home
+pod.home
+paperless.home
+code.home
 
 [pve_server]
 10.0.10.2
+
+[firewall]
+10.0.10.12
+
 
 [vps]
 vps ansible_host=23.239.17.96

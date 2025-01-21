@@ -1,12 +1,11 @@
 ---
 - name: Setup VS Code Server
-  hosts: vscode-server
+  hosts: code.home
   vars:
-    user: vscode-server
+    user: code
   roles:
     - update
-    - fstab
-    - tailscale
+    - dotnet
 
   tasks:
     - name: Install apt dependencies
@@ -29,27 +28,16 @@
         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.asc] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
         state: present
 
-    - name: Download Nodesource GPG key
-      ansible.builtin.get_url:
-        url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
-        dest: /usr/share/keyrings/nodesource.gpg
-        mode: '0644'
+    # - name: Download Nodesource GPG key
+    #   ansible.builtin.get_url:
+    #     url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+    #     dest: /usr/share/keyrings/nodesource.gpg
+    #     mode: '0644'
 
-    - name: Add Nodesource repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main"
-        state: present
-
-    - name: Download dotnet GPG key
-      ansible.builtin.get_url:
-        url: https://packages.microsoft.com/keys/microsoft.asc
-        dest: /usr/share/keyrings/microsoft-prod.asc
-        mode: '0644'
-
-    - name: Add dotnet repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.asc] https://packages.microsoft.com/debian/12/prod bookworm main"
-        state: present
+    # - name: Add Nodesource repository
+    #   ansible.builtin.apt_repository:
+    #     repo: "deb [signed-by=/usr/share/keyrings/nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main"
+    #     state: present
 
     - name: Install tools
       ansible.builtin.apt:
@@ -60,8 +48,6 @@
           - terraform
           - azure-cli
           - nodejs
-          - dotnet-sdk-7.0
-          - aspnetcore-runtime-7.0
 
     - name: Copy SSH keys
       ansible.builtin.copy:

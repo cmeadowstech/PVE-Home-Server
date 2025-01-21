@@ -1,6 +1,8 @@
 ---
 - name: Setup Postgres instance
   hosts: db.home
+  vars:
+    user: cmeadows
   gather_facts: false
   roles:
     - update
@@ -14,16 +16,30 @@
           - python3-pip
           - sudo
           - rsync
+          - python3-psycopg2
 
     - name: Install pip dependencies
       ansible.builtin.pip:
         name: psycopg2-binary
         extra_args: --break-system-packages
 
+    - name: Update user password
+      ansible.builtin.user:
+        name: "{{ user }}"
+        password: "{{ password | password_hash('sha512') }}"
+        update_password: always
+
     - name: Configure Postgresql
       become: true
       become_user: postgres
       block:
+        - name: Create PostgreSQL user for pgAdmin access
+          community.postgresql.postgresql_user:
+            name: "{{ user }}"
+            password: "{{ password }}"
+            role_attr_flags: LOGIN,CREATEDB,SUPERUSER
+            state: present
+
         - name: Set listen_addresses
           community.postgresql.postgresql_set:
             name: listen_addresses

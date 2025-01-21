@@ -95,3 +95,37 @@ module "storage" {
   password     = var.password
   storage_size = "8G"
 }
+
+module "pod" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "pod"
+  cores        = 10
+  memory       = 24576
+  password     = var.password
+  storage_size = "200G"
+  unprivileged = false
+}
+
+module "paperless" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "paperless"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  storage_size = "16G"
+}
+
+module "code" {
+  depends_on = [ module.technitium ]
+  source = "../modules/lxc"
+
+  hostname     = "code"
+  cores        = 8
+  memory       = 16384
+  password     = var.password
+  storage_size = "100G"
+}

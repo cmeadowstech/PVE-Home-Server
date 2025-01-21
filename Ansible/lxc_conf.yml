@@ -7,9 +7,10 @@
         path: "/etc/pve/lxc/{{ id }}.conf"
         block: "{{ lxc_config_block }}"
         marker: "# {mark} ANSIBLE MANAGED BLOCK - LXC NVIDIA CONFIG"
-        create: yes
-      register: config_changes
+        create: true
+      register: config_check
 
+  handlers:
     - name: Restart LXC
       ansible.builtin.command: pct reboot {{ id }}
       when: config_changes.changed

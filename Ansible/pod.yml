@@ -1,0 +1,63 @@
+---
+- name: Preconfigure pod
+  hosts: pod.home
+  vars:
+    user: pod
+  roles:
+    - update
+  tasks:
+    - name: Create group - {{ user }}
+      ansible.builtin.group:
+        name: "{{ user }}"
+        gid: 101111
+        state: present
+
+    - name: Create user - {{ user }}
+      ansible.builtin.user:
+        name: "{{ user }}"
+        uid: 101111
+        groups:
+          - docker
+          - "{{ user }}"
+        append: true
+
+- name: Update LXC .conf
+  ansible.builtin.import_playbook: lxc_conf.yml
+  vars:
+    id: "{{ hostvars['pod.home']['container_id_fact'] }}"
+    lxc_config_block: |
+      mp0: /storage/streaming,mp=/mnt/media
+      mp1: /storage/config,mp=/mnt/config
+      mp2: /storage/Downloads,mp=/mnt/downloads
+
+- name: Set up pod
+  hosts: pod.home
+  gather_facts: false
+  module_defaults:
+    group/community.docker.docker:
+      timeout: 120
+  vars:
+    user: pod
+    apps:
+      - name: arr
+        docker: true
+        pg_encoding: SQL_ASCII
+        pg_databases:
+          - sonarr-main
+          - sonarr-log
+          - radarr-main
+          - radarr-log
+          - prowlarr-main
+          - prowlarr-log
+      - name: changedetection
+        docker: true
+  roles:
+    - docker_compose
+
+- name: Set up Caddy
+  hosts: firewall
+  vars:
+    caddy_dest: pod.home
+  roles:
+    - caddy
+    - dns

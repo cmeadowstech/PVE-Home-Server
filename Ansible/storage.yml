@@ -44,9 +44,16 @@
         state: present
         install_recommends: false
 
+    - name: Create admin group
+      ansible.builtin.group:
+        name: "{{ user }}"
+        gid: 1111
+        state: present
+
     - name: Create Samba admin user
       ansible.builtin.user:
         name: "{{ user | lower }}"
+        uid: 1111
         comment: "Samba fileserver admin"
         password: "{{ password | password_hash('sha512') }}"
 
