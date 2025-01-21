@@ -20,15 +20,16 @@
     - name: Create group - {{ user }}
       ansible.builtin.group:
         name: "{{ user }}"
-        gid: 101111
+        gid: 1111
         state: present
 
     - name: Create user - {{ user }}
       ansible.builtin.user:
         name: "{{ user }}"
-        uid: 101111
-        groups: "{{ user }}"
-        append: true
+        uid: 1111
+        group: "{{ user }}"
+        password: "{{ password }}"
+        shell: /usr/bin/fish
 
     - name: Download HashiCorp GPG key
       ansible.builtin.get_url:
@@ -76,4 +77,4 @@
   vars:
     id: "{{ hostvars['code.home']['container_id_fact'] }}"
     lxc_config_block: |
-      mp0: /storage/git:/mnt/git
+      mp0: /storage/git,mp=/mnt/git
