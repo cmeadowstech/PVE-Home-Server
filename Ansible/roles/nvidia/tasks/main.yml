@@ -21,7 +21,7 @@
 
 # https://sluijsjes.nl/2024/05/18/coral-and-nvidia-passthrough-for-proxmox-lxc-to-install-frigate-video-surveillance-server/
 - name: Download and install NVIDIA driver
-  when: nvidia_check.rc != 0
+  when: nvidia_check.rc != 0 or nvidia_update | default(false)
   block:
     - name: Download NVIDIA driver
       ansible.builtin.get_url:

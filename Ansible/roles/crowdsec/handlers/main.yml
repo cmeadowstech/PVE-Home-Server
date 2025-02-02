@@ -1,2 +1,6 @@
 ---
-# handlers file for crowdsec
+- name: Restart crowdsec
+  ansible.builtin.systemd:
+    name: "crowdsec"
+    state: restarted
+    enabled: true

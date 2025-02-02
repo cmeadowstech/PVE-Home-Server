@@ -51,10 +51,10 @@ resource "proxmox_lxc" "lxc" {
   }
 
   connection {
-    host        = (
-        local.network.ip == "dhcp" 
-        ? "${var.hostname}.home" 
-        : split("/", local.network.ip)[0]
+    host = (
+      local.network.ip == "dhcp"
+      ? "${var.hostname}.home"
+      : split("/", local.network.ip)[0]
     )
     user        = "root"
     private_key = file(var.ssh_keys["priv"])

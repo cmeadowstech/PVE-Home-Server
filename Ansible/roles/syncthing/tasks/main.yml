@@ -11,23 +11,27 @@
     name: lxml
     extra_args: --break-system-packages
 
-- name: Replace default GUI address
-  ansible.builtin.replace:
-    path: /root/.config/syncthing/config.xml
-    regexp: '<gui.*>[\s\S]*?</address>'
-    replace: |-
-      <gui enabled="true" tls="false" debugging="false">
-        <address>{{ ansible_eth0.ipv4.address }}:8384</address>
-
 - name: Ensure Syncthing is started
-  ansible.builtin.service:
-    name: syncthing@root
+  ansible.builtin.systemd:
+    name: "syncthing@{{ user }}"
     state: started
     enabled: true
 
+- name: Replace default GUI address
+  ansible.builtin.replace:
+    path: "/home/{{ user }}/.config/syncthing/config.xml"
+    regexp: '<gui.*>[\s\S]*?</address>'
+    replace: |-
+      <gui enabled="true" tls="false" debugging="false">
+        <address>0.0.0.0:8384</address>
+  notify: Restart Syncthing
+
+- name: Force handlers to run now
+  ansible.builtin.meta: flush_handlers
+
 - name: Get Syncthing API X-API-Key
   community.general.xml:
-    path: /root/.config/syncthing/config.xml
+    path: "/home/{{ user }}/.config/syncthing/config.xml"
     xpath: /configuration/gui/apikey
     content: text
   register: syncthing_api_key
@@ -43,16 +47,31 @@
     body:
       user: cmeadows
       password: "{{ password }}"
+  register: result
+  until: result.status == 200
+  retries: 3
+  delay: 5
+  notify: Restart Syncthing
 
 - name: Add folders to Syncthing
   ansible.builtin.uri:
     url: http://{{ ansible_eth0.ipv4.address }}:8384/rest/config/folders
     body_format: json
+    method: POST
     headers:
       Content-Type: application/json
       X-API-Key: "{{ syncthing_api_key.matches[0].apikey }}"
     body:
-      id: downloads
-      path: /mnt/pve-share/Downloads
+      id: "{{ item.id }}"
+      path: "{{ item.path }}"
+  loop:
+    - id: downloads
+      path: /mnt/storage/Downloads/desktop/
+    - id: books
+      path: /mnt/storage/Media/Books/
 
-- debug: msg="Syncthing can be accessed at http://{{ ansible_eth0.ipv4.address }}:8384/"
+- name: Add syncthing to technitium
+  ansible.builtin.script: technitium_script.sh -h syncthing -d firewall.home
+  environment:
+    TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
+  delegate_to: localhost

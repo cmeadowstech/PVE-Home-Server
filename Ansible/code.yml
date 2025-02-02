@@ -62,6 +62,7 @@
           - terraform
           - azure-cli
           - nodejs
+          - python3-psycopg2
 
     - name: Copy SSH keys
       ansible.builtin.copy:

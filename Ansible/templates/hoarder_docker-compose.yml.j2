@@ -1,15 +1,18 @@
 version: "3.8"
 services:
   web:
+    container_name: web
     image: ghcr.io/hoarder-app/hoarder-web:${HOARDER_VERSION:-release}
     restart: unless-stopped
     volumes:
-      - data:/data
+      - /mnt/config/hoarder/data:/data
     ports:
-      - {{ port }}:3000
+      - "{{ port }}:3000"
     env_file:
       - .env
     environment:
+      PUID: 101111
+      PGID: 101111
       REDIS_HOST: redis
       MEILI_ADDR: http://meilisearch:7700
       DATA_DIR: /data
@@ -60,18 +63,18 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /mnt/root/config/hoarder/redis
+      device: /mnt/config/hoarder/redis
 
   meilisearch:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /mnt/root/config/hoarder/meilisearch
+      device: /mnt/config/hoarder/meilisearch
 
   data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /mnt/root/config/hoarder/data
+      device: /mnt/config/hoarder/data

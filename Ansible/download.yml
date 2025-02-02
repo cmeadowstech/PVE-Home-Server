@@ -5,11 +5,12 @@
     - user: downloader
   roles:
     - update
+    - wireguard
 
 - name: Update LXC .conf
   ansible.builtin.import_playbook: lxc_conf.yml
   vars:
-    id: "{{ hostvars['download.home']['container_id_fact'] }}"
+    id: "{{ hostvars.vars.container_id_fact }}"
     lxc_config_block: |
       mp0: /storage/Downloads,mp=/mnt/downloads
 

@@ -1,2 +1,6 @@
 ---
-# handlers file for syncthing
+- name: Restart Syncthing
+  ansible.builtin.systemd:
+    name: "syncthing@{{ user }}"
+    state: restarted
+    enabled: true

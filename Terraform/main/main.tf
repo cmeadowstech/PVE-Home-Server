@@ -10,9 +10,9 @@ terraform {
 provider "proxmox" {
   pm_api_url          = "https://10.0.10.2:8006/api2/json"
   pm_tls_insecure     = true
-  pm_api_token_id     = var.pm_api_token_id
-  pm_api_token_secret = var.pm_api_token_secret
-  pm_debug            = true
+  pm_user     = var.PM_USER
+  pm_password = var.PM_PASS
+  # pm_debug            = true
 }
 
 module "technitium" {
@@ -29,8 +29,8 @@ module "technitium" {
 }
 
 module "video" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "video"
   cores        = 6
@@ -40,8 +40,8 @@ module "video" {
 }
 
 module "games" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "games"
   cores        = 8
@@ -52,9 +52,22 @@ module "games" {
   # Nesting might need to be enabled manually post deployment
 }
 
+module "game" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "game"
+  cores        = 8
+  memory       = 8192
+  password     = var.password
+  unprivileged = false
+  storage_size = "300G"
+  nesting = true
+}
+
 module "download" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "download"
   cores        = 2
@@ -64,8 +77,8 @@ module "download" {
 }
 
 module "monitor" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "monitor"
   cores        = 4
@@ -75,8 +88,8 @@ module "monitor" {
 }
 
 module "db" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "db"
   cores        = 2
@@ -86,8 +99,8 @@ module "db" {
 }
 
 module "storage" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "storage"
   cores        = 1
@@ -97,8 +110,8 @@ module "storage" {
 }
 
 module "pod" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "pod"
   cores        = 10
@@ -106,22 +119,25 @@ module "pod" {
   password     = var.password
   storage_size = "200G"
   unprivileged = false
+  nesting      = true
 }
 
 module "paperless" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "paperless"
   cores        = 2
   memory       = 2048
   password     = var.password
   storage_size = "16G"
+  unprivileged = false
+  nesting      = true
 }
 
 module "code" {
-  depends_on = [ module.technitium ]
-  source = "../modules/lxc"
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
   hostname     = "code"
   cores        = 8

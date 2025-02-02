@@ -4,12 +4,12 @@ variable "password" {
   sensitive   = true
 }
 
-variable "pm_api_token_id" {
+variable "PM_USER" {
   type      = string
   sensitive = true
 }
 
-variable "pm_api_token_secret" {
+variable "PM_PASS" {
   type      = string
   sensitive = true
 }

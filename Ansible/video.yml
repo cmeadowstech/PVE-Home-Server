@@ -3,14 +3,16 @@
   hosts: video.home
   vars:
     user: jellyfin
+    crowdsec_collection: LePresidente/jellyfin
   roles:
     - update
     - dotnet
+    - crowdsec
 
 - name: Update LXC .conf
   ansible.builtin.import_playbook: lxc_conf.yml
   vars:
-    id: "{{ hostvars['video.home']['container_id_fact'] }}"
+    id: "{{ hostvars.vars.container_id_fact }}"
     lxc_config_block: |
       lxc.cgroup2.devices.allow: a
       lxc.cap.drop:
@@ -20,7 +22,8 @@
       lxc.mount.entry: /dev/nvidia-modeset dev/nvidia-modeset none bind,optional,create=file
       lxc.mount.entry: /dev/nvidia-uvm dev/nvidia-uvm none bind,optional,create=file
       lxc.mount.entry: /dev/nvidia-uvm-tools dev/nvidia-uvm-tools none bind,optional,create=file
-      dev0: /dev/dri/renderD128,gid=104   
+      dev0: /dev/dri/renderD128,gid=104
+      dev1: /dev/dri/renderD129,gid=104
       mp0: /storage/streaming,mp=/mnt/media
 
 - name: Setup Jellyfin server
@@ -34,6 +37,18 @@
         update_cache: true
         pkg:
           - intel-opencl-icd
+
+    - name: Create {{jellyfin}} group
+      ansible.builtin.group:
+        name: "{{ user }}"
+        gid: 1111
+        state: present
+
+    - name: Create {{jellyfin}} user
+      ansible.builtin.user:
+        name: "{{ user }}"
+        uid: 1111
+        password: "{{ password | password_hash('sha512') }}"
 
     - name: Run Nvidia role
       ansible.builtin.include_role:

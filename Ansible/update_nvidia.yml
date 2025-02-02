@@ -1,0 +1,18 @@
+---
+- name: Update NVidia Drivers
+  hosts:
+    - pve
+  vars:
+    nvidia_update: true
+    nvidia_driver: server
+  roles:
+    - nvidia
+
+- name: Update NVidia Drivers
+  hosts:
+    - games.home
+  vars:
+    nvidia_update: true
+    nvidia_driver: client
+  roles:
+    - nvidia

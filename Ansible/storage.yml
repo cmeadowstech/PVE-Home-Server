@@ -5,20 +5,8 @@
     user: cmeadows
   roles:
     - update
+    - syncthing # Might need to be run after user creation
   tasks:
-    - name: Add 45drives repository key
-      ansible.builtin.get_url:
-        url: https://repo.45drives.com/key/gpg.asc
-        dest: /usr/share/keyrings/45drives-archive-keyring.asc
-        mode: '0644'
-
-    - name: Add 45drives repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/45drives-archive-keyring.asc] https://repo.45drives.com/debian focal main"
-        filename: 45drives
-        state: present
-        update_cache: true
-
     - name: Install required packages
       ansible.builtin.apt:
         name:
@@ -33,16 +21,6 @@
           - winbind
           - wsdd
         state: present
-
-    - name: Install Cockpit packages
-      ansible.builtin.apt:
-        name:
-          - cockpit
-          - cockpit-identities
-          - cockpit-file-sharing
-          - cockpit-navigator
-        state: present
-        install_recommends: false
 
     - name: Create admin group
       ansible.builtin.group:
@@ -131,6 +109,14 @@
 - name: Update LXC .conf
   ansible.builtin.import_playbook: lxc_conf.yml
   vars:
-    id: "{{ hostvars['storage.home']['container_id_fact'] }}"
+    id: "{{ hostvars.vars.container_id_fact }}"
     lxc_config_block: |
       mp0: /storage,mp=/mnt/storage
+
+- name: Update Caddy
+  ansible.builtin.import_playbook: caddy.yml
+  vars:
+    apps:
+      - hostname: syncthing.home
+        upstream_host: "{{ hostvars.vars.host_fqdn }}"
+        port: 8384

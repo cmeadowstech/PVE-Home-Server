@@ -8,10 +8,6 @@
     combined_vars: "{{ combined_vars + [lookup('file', './files/' + item.name + '_docker-compose.yml') | from_yaml] }}"
   loop: "{{ apps }}"
 
-# - name: Use loaded variables
-#   ansible.builtin.debug:
-#     msg: "Value is {{ combined_vars }}"
-
 - name: Create Caddy configs for services
   ansible.builtin.copy:
     dest: "/usr/local/etc/caddy/caddy.d/{{ item.value.container_name }}.conf"

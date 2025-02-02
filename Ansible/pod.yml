@@ -3,6 +3,19 @@
   hosts: pod.home
   vars:
     user: pod
+    apps:
+      - name: arr
+        docker: true
+        pg_encoding: SQL_ASCII
+        pg_databases:
+          - sonarr-main
+          - sonarr-log
+          - radarr-main
+          - radarr-log
+          - prowlarr-main
+          - prowlarr-log
+      - name: changedetection
+        docker: true
   roles:
     - update
   tasks:
@@ -24,7 +37,7 @@
 - name: Update LXC .conf
   ansible.builtin.import_playbook: lxc_conf.yml
   vars:
-    id: "{{ hostvars['pod.home']['container_id_fact'] }}"
+    id: "{{ hostvars.vars.container_id_fact }}"
     lxc_config_block: |
       mp0: /storage/streaming,mp=/mnt/media
       mp1: /storage/config,mp=/mnt/config
@@ -38,26 +51,15 @@
       timeout: 120
   vars:
     user: pod
-    apps:
-      - name: arr
-        docker: true
-        pg_encoding: SQL_ASCII
-        pg_databases:
-          - sonarr-main
-          - sonarr-log
-          - radarr-main
-          - radarr-log
-          - prowlarr-main
-          - prowlarr-log
-      - name: changedetection
-        docker: true
+    apps: "{{ hostvars.vars.apps }}"
   roles:
     - docker_compose
 
 - name: Set up Caddy
   hosts: firewall
   vars:
-    caddy_dest: pod.home
+    caddy_dest: "{{ hostvars.vars.host_fqdn }}"
+    apps: "{{ hostvars.vars.apps }}"
   roles:
     - caddy
     - dns
