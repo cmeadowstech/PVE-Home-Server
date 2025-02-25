@@ -6,36 +6,38 @@
       - iptables
       - wireguard
 
+- name: Copy wireguard config
+  ansible.builtin.template:
+    src: "{{ wg_conf_file }}.conf.j2"
+    dest: "/etc/wireguard/{{ wg_conf_file }}.conf"
+  notify: Restart wireguard
+  register: wg_conf
+
 - name: Create symbolic link for resolv.conf
   file:
     src: /run/resolvconf/resolv.conf
     dest: /etc/resolv.conf
     state: link
     force: true
-
-- name: Copy wireguard config
-  ansible.builtin.template:
-    src: us-atl-wg-002.conf.j2
-    dest: /etc/wireguard/us-atl-wg-002.conf
   notify: Restart wireguard
-
-- name: Ensure network scripts directory exists
-  file:
-    path: /etc/network/if-up.d
-    state: directory
-    mode: '0755'
-
-- name: Create permanent route script
-  copy:
-    dest: /etc/network/if-up.d/custom-routes
-    mode: '0751'
-    content: |
-      #!/bin/sh
-      ip route add 10.0.0.0/16 via 10.0.11.1 || true
-  notify: Restart networking
 
 - name: Ensure wireguard is started
   ansible.builtin.systemd:
-    name: wg-quick@us-atl-wg-002
+    name: "wg-quick@{{ wg_conf_file }}"
     state: started
     enabled: true
+
+# - name: Ensure network scripts directory exists
+#   file:
+#     path: /etc/network/if-up.d
+#     state: directory
+#     mode: '0755'
+
+# - name: Create permanent route script
+#   copy:
+#     dest: /etc/network/if-up.d/custom-routes
+#     mode: '0751'
+#     content: |
+#       #!/bin/sh
+#       ip route add 10.0.0.0/16 via {{ wg_conf_file }} || true
+#   notify: Restart networking

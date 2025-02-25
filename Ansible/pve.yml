@@ -116,6 +116,8 @@
               - libvulkan1
               - pkg-config
               - intel-opencl-icd
+              - dkms
+              - libc6-dev
 
     - name: Run Nvidia role
       ansible.builtin.include_role:

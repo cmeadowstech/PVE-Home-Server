@@ -22,26 +22,19 @@
       - docker-compose-plugin
 
 # - name: Create PostgreSQL databases
-#   delegate_to: localhost
-#   community.postgresql.postgresql_db:
-#     name: "{{ item.1 }}"
-#     state: present
-#     owner: "{{ item.0.name }}"
-#     encoding: "{{ item.0.pg_encoding }}"
-#     template: template0
-#     login_host: db.home
-#     login_user: cmeadows
-#     login_password: "{{ password }}"
-#   loop: "{{ docker_apps | selectattr('pg_databases', 'defined') | subelements('pg_databases') }}"
+  # delegate_to: localhost
+  # community.postgresql.postgresql_db:
+  #   name: "{{ item.1 }}"
+  #   state: present
+  #   owner: "{{ item.0.name }}"
+  #   encoding: "{{ item.0.pg_encoding }}"
+  #   template: template0
+  #   login_host: db.home
+  #   login_user: cmeadows
+  #   login_password: "{{ password }}"
+  # loop: "{{ docker_apps | selectattr('pg_databases', 'defined') | subelements('pg_databases') }}"
 
-# - name: Create app folder
-#   ansible.builtin.file:
-#     path: "/src/{{ item.name }}"
-#     state: directory
-#     mode: '0750'
-#     owner: "{{ user }}"
-#     group: "{{ user }}"
-#   with_items: "{{ docker_apps }}"
+
 
 # - name: Create config folder
 #   ansible.builtin.file:
@@ -64,17 +57,6 @@
 #   loop: "{{ docker_apps }}"
 #   when: item.pg_databases is defined
 
-# - name: Copy docker compose
-#   ansible.builtin.copy:
-#     src: "{{ item.name }}_docker-compose.yml"
-#     dest: "/src/{{ item.name }}/docker-compose.yml"
-#     mode: '0640'
-#     owner: "{{ user }}"
-#     group: "{{ user }}"
-#   with_items: "{{ docker_apps }}"
 
-# - name: Create and start from docker-compose
-#   community.docker.docker_compose_v2:
-#     project_src: "/src/{{ item.name }}"
-#   register: compose_output
-#   with_items: "{{ docker_apps }}"
+
+

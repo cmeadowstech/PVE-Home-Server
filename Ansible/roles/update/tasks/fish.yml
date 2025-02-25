@@ -1,0 +1,31 @@
+---
+- name: Add Fish repository GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_12/Release.key |
+    gpg --dearmor > /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg
+  args:
+    creates: /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg
+
+- name: Add Fish repository
+  ansible.builtin.apt_repository:
+    repo: deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_12/ /
+    state: present
+    filename: shells-fish-release-3
+
+- name: Install fish
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400 # One day
+    pkg:
+      - fish
+
+- name: Set root user shell to fish
+  ansible.builtin.user:
+    name: root
+    shell: /usr/bin/fish
+
+- name: Set fish as default shell for new users
+  ansible.builtin.lineinfile:
+    path: /etc/adduser.conf
+    regexp: '^DSHELL='
+    line: 'DSHELL=/usr/bin/fish'

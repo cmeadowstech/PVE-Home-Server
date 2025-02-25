@@ -1,0 +1,140 @@
+- name: Setup Jellyfin server
+  hosts: video.home
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - ffmpeg
+
+    - name: Create /usr/local/bin directory if it doesn't exist
+      file:
+        path: /usr/local/bin
+        state: directory
+        mode: '0755'
+
+    - name: Create symlink for FFmpeg in /usr/local/bin
+      file:
+        src: /usr/bin/ffmpeg
+        dest: /usr/local/bin/ffmpeg
+        state: link
+
+    - name: Create fileflows user
+      ansible.builtin.user:
+        name: jellyfin
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+
+    - name: Check if FileFlows service exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/fileflows.service
+      register: service_check
+
+    - name: Setup FileFlows
+      block:
+        - name: Install FileFlows
+          # when: not service_check.stat.exists
+          block:
+            - name: Download FileFlows
+              ansible.builtin.get_url:
+                url: https://fileflows.com/downloads/zip
+                dest: /tmp/FileFlows.zip
+                mode: '0644'
+
+            - name: Create FileFlows directory
+              ansible.builtin.file:
+                path: /usr/src/FileFlows
+                state: directory
+                mode: '0755'
+                owner: jellyfin
+                group: jellyfin
+              register: fileflows_dir
+
+            - name: Extract FileFlows
+              ansible.builtin.unarchive:
+                src: /tmp/FileFlows.zip
+                dest: "{{ fileflows_dir.path }}"
+                remote_src: true
+                owner: jellyfin
+                group: jellyfin
+
+            - name: Set execute permission on run-server.sh
+              ansible.builtin.file:
+                path: "{{ fileflows_dir.path }}/run-server.sh"
+                mode: '0755'
+                owner: jellyfin
+                group: jellyfin
+
+            # - name: Create FileFlows node config 
+            #   ansible.builtin.copy:
+            #     dest: "{{ fileflows_dir.path }}/Data/node.config"
+            #     mode: '0644'
+            #     content: |
+            #       {
+            #         "ServerUrl": "http://video.home:19200/",
+            #         "AccessToken": "",
+            #         "StartMinimized": false,
+            #         "HostName": "video"
+            #       }
+
+            - name: Create FileFlows server systemd service
+              ansible.builtin.copy:
+                dest: /etc/systemd/system/fileflows.service
+                mode: '0644'
+                content: |
+                  [Unit]
+                  Description=FileFlows
+
+                  [Service]
+                  WorkingDirectory={{ fileflows_dir.path }}
+                  ExecStart={{ fileflows_dir.path }}/fileflows-systemd-entrypoint.sh
+                  SyslogIdentifier=FileFlows
+                  Restart=always
+                  RestartSec=10
+                  User=jellyfin
+
+                  [Install]
+                  WantedBy=multi-user.target
+
+            # - name: Create FileFlows node systemd service
+            #   ansible.builtin.copy:
+            #     dest: /etc/systemd/system/fileflows-node.service
+            #     mode: '0644'
+            #     content: |
+            #       [Unit]
+            #       Description=FileFlows Node
+
+            #       [Service]
+            #       WorkingDirectory={{ fileflows_dir.path }}
+            #       ExecStart={{ fileflows_dir.path }}/fileflows-node-systemd-entrypoint.sh
+            #       SyslogIdentifier=FileFlows Node
+            #       Restart=always
+            #       RestartSec=10
+            #       User=fileflows
+
+            #       [Install]
+            #       WantedBy=multi-user.target
+
+            - name: Set recursive permissions for fileflows user
+              ansible.builtin.file:
+                path: "{{ fileflows_dir.path }}"
+                state: directory
+                owner: jellyfin
+                group: jellyfin
+                mode: "u=rwX,g=rX,o=rX"
+                recurse: yes
+
+            - name: Start and enable FileFlows services
+              ansible.builtin.systemd:
+                name: "{{ item }}"
+                state: started
+                enabled: true
+                daemon_reload: true
+              loop:
+                - fileflows
+                # - fileflows-node
+
+            - name: Clean up zip file
+              ansible.builtin.file:
+                path: /tmp/FileFlows.zip
+                state: absent

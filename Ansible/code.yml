@@ -63,6 +63,10 @@
           - azure-cli
           - nodejs
           - python3-psycopg2
+          - npm
+
+    - name: Install Azure azure-cli
+      ansible.builtin.shell: curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
     - name: Copy SSH keys
       ansible.builtin.copy:
@@ -73,9 +77,9 @@
         - ~/.ssh/pve-server
         - ~/.ssh/pve-server.pub
 
-- name: Update LXC .conf
-  ansible.builtin.import_playbook: lxc_conf.yml
-  vars:
-    id: "{{ hostvars['code.home']['container_id_fact'] }}"
-    lxc_config_block: |
-      mp0: /storage/git,mp=/mnt/git
+# - name: Update LXC .conf
+#   ansible.builtin.import_playbook: lxc_conf.yml
+#   vars:
+#     id: "{{ hostvars['code.home']['container_id_fact'] }}"
+#     lxc_config_block: |
+#       mp0: /storage/git,mp=/mnt/git

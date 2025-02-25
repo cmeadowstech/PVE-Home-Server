@@ -3,12 +3,13 @@
   hosts: pve_server
   tasks:
     - name: Add LXC configuration entries
-      ansible.builtin.blockinfile:
+      ansible.builtin.lineinfile:
         path: "/etc/pve/lxc/{{ id }}.conf"
-        block: "{{ lxc_config_block }}"
-        marker: "# {mark} ANSIBLE MANAGED BLOCK - LXC NVIDIA CONFIG"
+        line: "{{ item }}"
         create: true
+      loop: "{{ lxc_config }}"
       register: config_check
+      notify: Restart LXC
 
   handlers:
     - name: Restart LXC

@@ -1,0 +1,67 @@
+services:
+  ntfy:
+    image: binwiederhier/ntfy
+    container_name: ntfy
+    command:
+      - serve
+    environment:
+      NTFY_BASE_URL: https://ntfy.meadows.page/
+      TZ: America/New_York
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_BEHIND_PROXY: true
+      NTFY_ENABLE_LOGIN: true
+      NTFY_CACHE_FILE: /var/lib/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/auth.db
+      NTFY_ATTACHMENT_CACHE_DIR: /var/lib/ntfy/attachments
+    user: 1111:1111
+    volumes:
+      - /var/cache/ntfy:/var/cache/ntfy
+      - /etc/ntfy:/etc/ntfy
+      - ./:/var/lib/ntfy
+    ports:
+      - 8080:80
+    healthcheck: # optional: remember to adapt the host:port to your environment
+        test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1"]
+        interval: 60s
+        timeout: 10s
+        retries: 3
+        start_period: 40s
+    restart: unless-stopped
+    labels:
+      caddy: ntfy.meadows.page
+      caddy.reverse_proxy: "{{upstreams 80}}"
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:ci-alpine
+    container_name: caddy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CADDY_INGRESS_NETWORKS=vps_default
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - caddy_data:/data
+    restart: unless-stopped
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id
+    container_name: pocketid
+    user: 1111:1111
+    restart: unless-stopped
+    env_file: pocketid.env
+    ports:
+      - 3000:80
+    volumes:
+      - "./data:/app/backend/data"
+    # Optional healthcheck  
+    healthcheck:
+      test: "curl -f http://localhost/health"
+      interval: 1m30s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+    labels:
+      caddy: pocketid.meadows.page
+      caddy.reverse_proxy: "{{upstreams 80}}"
+
+volumes:
+  caddy_data: {}

@@ -3,8 +3,10 @@
   hosts: download.home
   vars:
     - user: downloader
+    - wg_conf_file: us-atl-wg-002
   roles:
     - update
+    - localroute
     - wireguard
 
 - name: Update LXC .conf

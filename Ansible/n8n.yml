@@ -1,0 +1,61 @@
+---
+- name: Set up n8n
+  hosts: code.home
+  vars:
+    user: code
+    app: n8n
+  roles:
+    - update
+  tasks:
+    - name: Install n8n globally
+      community.general.npm:
+        name: n8n
+        global: yes
+        state: present
+
+    - name: Configure postgres database
+      block:
+        - name: Create PostgreSQL user
+          delegate_to: localhost
+          community.postgresql.postgresql_user:
+            name: "{{ app }}"
+            password: "{{ password }}"
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+            db: postgres
+
+        - name: Create PostgreSQL databases
+          delegate_to: localhost
+          community.postgresql.postgresql_db:
+            name: "{{ app }}"
+            state: present
+            owner: "{{ app }}"
+            encoding: UTF-8
+            template: template0
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+
+    - name: Create n8n systemd service file
+      template:
+        src: n8n.service.j2
+        dest: /lib/systemd/system/n8n.service
+        mode: '0644'
+      notify: Restart n8n
+  
+  handlers:
+    - name: Restart n8n
+      ansible.builtin.systemd:
+        name: n8n
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+
+- name: Update Caddy
+  ansible.builtin.import_playbook: caddy.yml
+  vars:
+    apps:
+      - hostname: "{{ hostvars.vars.app }}.home"
+        upstream_host: "{{ hostvars.vars.host_fqdn }}"
+        port: 5678

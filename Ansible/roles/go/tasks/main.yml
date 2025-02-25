@@ -1,0 +1,44 @@
+---
+- name: Check if Go is installed
+  command: go version
+  register: go_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Install go
+  when: go_check.rc != 0
+  block:
+    - name: Download Go binary
+      ansible.builtin.get_url:
+        url: "https://go.dev/dl/go{{ go_version | default('1.24.0') }}.linux-amd64.tar.gz"
+        dest: /tmp/go.tar.gz
+        mode: '0644'
+
+    - name: Remove existing Go installation
+      ansible.builtin.file:
+        path: /usr/local/go
+        state: absent
+
+    - name: Extract Go archive to /usr/local
+      ansible.builtin.unarchive:
+        src: /tmp/go.tar.gz
+        dest: /usr/local
+        remote_src: yes
+
+    - name: Set Go environment variables system-wide
+      ansible.builtin.lineinfile:
+        path: /etc/profile
+        line: 'export PATH=$PATH:/usr/local/go/bin'
+        create: yes
+
+    - name: Set Go environment variables system-wide for Fish
+      ansible.builtin.copy:
+        dest: /etc/fish/conf.d/go.fish
+        content: 'set -gx PATH $PATH /usr/local/go/bin'
+        mode: '0644'
+      become: yes
+
+    - name: Clean up downloaded archive
+      ansible.builtin.file:
+        path: /tmp/go.tar.gz
+        state: absent

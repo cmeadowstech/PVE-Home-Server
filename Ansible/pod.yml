@@ -14,6 +14,7 @@
           - radarr-log
           - prowlarr-main
           - prowlarr-log
+          - jellyseerr
       - name: changedetection
         docker: true
   roles:

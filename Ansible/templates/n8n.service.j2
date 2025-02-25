@@ -1,0 +1,20 @@
+[Unit]
+Description=n8n workflow automation
+After=network.target
+
+[Service]
+Environment=N8N_SECURE_COOKIE=false
+Environment=NODE_FUNCTION_ALLOW_BUILTIN=*
+Environment=DB_TYPE=postgresdb
+Environment=DB_POSTGRESDB_HOST=db.home
+Environment=DB_POSTGRESDB_DATABASE={{ app }}
+Environment=DB_POSTGRESDB_USER={{ app }}
+Environment=DB_POSTGRESDB_PASSWORD={{ password}}
+Type=simple
+User={{ user }}
+ExecStart=/usr/local/bin/n8n start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

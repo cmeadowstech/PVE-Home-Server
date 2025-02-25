@@ -42,6 +42,11 @@ services:
       - LOG_LEVEL=debug
       - TZ=America/New_York
       - PORT=5055 #optional
+      - DB_TYPE="postgres"      # Which DB engine to use, either "sqlite" or "postgres". The default is "sqlite".
+      - DB_HOST="db.home"       # (optional) The host (URL) of the database. The default is "localhost".
+      - DB_PORT="5432"          # (optional) The port to connect to. The default is "5432".
+      - DB_USER="arr"          # (required) Username used to connect to the database.
+      - DB_PASS="{{ password }}" # (required) Password of the user used to connect to the database.
     ports:
       - 5055:5055
     volumes:
@@ -50,6 +55,7 @@ services:
   bazarr:
     container_name: bazarr
     image: ghcr.io/hotio/bazarr
+    restart: unless-stopped
     ports:
       - "6767:6767"
     environment:
@@ -65,6 +71,7 @@ services:
   prowlarr:
     container_name: prowlarr
     image: ghcr.io/hotio/prowlarr
+    restart: unless-stopped
     ports:
       - "9696:9696"
     environment:

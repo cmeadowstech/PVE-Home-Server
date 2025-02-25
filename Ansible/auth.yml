@@ -1,0 +1,182 @@
+---
+- name: Set up auth server
+  hosts: auth.home
+  vars:
+    app: pocketid
+    port: 3000
+  roles:
+    - update
+    - docker_compose
+    - nodejs
+    - go
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - git
+          - build-essential
+
+    - name: Install PM2 globally
+      community.general.npm:
+        name: pm2
+        global: yes
+        state: present
+      become: yes
+
+    - name: Create group - {{ app }}
+      ansible.builtin.group:
+        name: "{{ app }}"
+        gid: "{{ container_id.stdout }}"
+        state: present
+      register: app_group
+
+    - name: Create user - {{ app }}
+      ansible.builtin.user:
+        name: "{{ app }}"
+        groups:
+          - "{{ app_group.name }}"
+        uid: "{{ container_id.stdout }}"
+        group: "{{ app }}"
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+        password: "{{ password | password_hash('sha512') }}"
+      register: app_user
+
+    - name: Create app folder
+      ansible.builtin.file:
+        path: "/src/{{ app }}"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+      register: app_folder
+
+    - name: Add repository directory to git safe.directory
+      command: "git config --global --add safe.directory '{{ app_folder.path }}'"
+
+    - name: Clone pocket-id repository
+      ansible.builtin.git:
+        repo: https://github.com/pocket-id/pocket-id
+        dest: "{{ app_folder.path }}"
+        clone: yes
+        force: true
+      notify: Restart Pocket ID
+
+    - name: Copy Pocket ID .env
+      ansible.builtin.template:
+        src: "{{ app }}.env.j2"
+        dest: "{{ item }}"
+        mode: '0644'
+      loop:
+        - "{{ app_folder.path }}/frontend/.env"
+        - "{{ app_folder.path }}/backend/.env"
+      environment:
+        GIT_CONFIG_GLOBAL: /root/.gitconfig
+      notify: Restart Pocket ID
+
+    - name: Build backend
+      command: go build -o ../pocket-id-backend
+      args:
+        chdir: "{{ app_folder.path }}/backend/cmd"
+        creates: "{{ app_folder.path }}/backend/pocket-id-backend"
+      environment:
+        CGO_ENABLED: "1"
+      notify: Restart Pocket ID
+    
+    - name: Install frontend dependencies
+      community.general.npm:
+        path: "{{ app_folder.path }}/frontend"
+        state: present
+      notify: Restart Pocket ID
+
+    - name: Build backend
+      command: npm run build
+      args:
+        chdir: "{{ app_folder.path }}/frontend"
+        creates: "{{ app_folder.path }}/frontend/build/index.js"
+      notify: Restart Pocket ID
+
+    - name: Set recursive permissions
+      ansible.builtin.file:
+        path: "{{ app_folder.path }}"
+        state: directory
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+        mode: "u=rwX,g=rX,o=rX"
+        recurse: yes
+
+    - name: Create Backend service file
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/pocketid-backend.service
+        content: |
+          [Unit]
+          Description=Pocket ID Backend
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ app_user.name }}
+          Group={{ app_user.group }}
+          WorkingDirectory={{ app_folder.path }}/backend
+          EnvironmentFile={{ app_folder.path }}/backend/.env
+          ExecStart={{ app_folder.path }}/backend/pocket-id-backend
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+      notify: Restart Pocket ID
+
+    - name: Create Frontend service file
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/pocketid-frontend.service
+        content: |
+          [Unit]
+          Description=Pocket ID Frontend
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ app_user.name }}
+          Group={{ app_user.group }}
+          WorkingDirectory={{ app_folder.path }}/frontend
+          EnvironmentFile={{ app_folder.path }}/frontend/.env
+          ExecStart=/usr/bin/node build/index.js
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+      notify: Restart Pocket ID
+
+    - name: Enable and start Pocket ID services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      with_items:
+        - pocketid-backend
+        - pocketid-frontend
+
+  handlers:
+    - name: Restart Pocket ID
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+      with_items:
+        - pocketid-backend
+        - pocketid-frontend
+
+- name: Update Caddy
+  ansible.builtin.import_playbook: caddy.yml
+  vars:
+    apps:
+      - hostname: "{{ hostvars.vars.app }}.home"
+        upstream_host: "{{ hostvars.vars.host_fqdn }}"
+        port: "{{ hostvars.vars.port }}"

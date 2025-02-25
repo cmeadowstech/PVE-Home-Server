@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if [ "$IFACE" = "eth0" ]; then
+    ip route add 10.0.0.0/16 via {{ wg_conf_file }}
+fi

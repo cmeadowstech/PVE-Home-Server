@@ -1,0 +1,67 @@
+---
+- name: Preconfigure Jellyfin server
+  hosts: auth.home
+  vars:
+    app: "{{ ansible_hostname }}"
+    port: 3000
+  roles:
+    - update
+    - docker_compose
+  tasks:
+    - name: Create group - {{ app }}
+      ansible.builtin.group:
+        name: "{{ app }}"
+        gid: "{{ container_id.stdout }}"
+        state: present
+      register: app_group
+
+    - name: Create user - {{ app }}
+      ansible.builtin.user:
+        name: "{{ app }}"
+        groups:
+          - "{{ app_group.name }}"
+        uid: "{{ container_id.stdout }}"
+        group: "{{ app }}"
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+        password: "{{ password | password_hash('sha512') }}"
+      register: app_user
+
+    - name: Create app folder
+      ansible.builtin.file:
+        path: "/src/{{ app }}"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+      register: app_folder
+
+    - name: Copy docker compose
+      ansible.builtin.template:
+        src: "{{ app }}_docker-compose.yml.j2"
+        dest: "{{ app_folder.path }}/docker-compose.yml"
+        mode: '0640'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Copy .env file
+      ansible.builtin.template:
+        src: "{{ app }}.env.j2"
+        dest: "{{ app_folder.path }}/.env"
+        mode: '0644'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Create and start from docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_folder.path }}"
+      register: compose_output
+
+- name: Update Caddy
+  ansible.builtin.import_playbook: caddy.yml
+  vars:
+    apps:
+      - hostname: "{{ hostvars.vars.app }}.home"
+        upstream_host: "{{ hostvars.vars.host_fqdn }}"
+        port: "{{ hostvars.vars.port }}"

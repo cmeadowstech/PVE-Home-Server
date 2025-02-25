@@ -1,0 +1,102 @@
+---
+- name: Preconfigure Jellyfin server
+  hosts: video.home
+  roles:
+    - update
+  vars:
+    app: jellyfin
+    port: 8096
+  tasks:
+    - name: Create {{jellyfin}} group
+      ansible.builtin.group:
+        name: "{{ app }}"
+        gid: 1111
+        state: present
+
+    - name: Create {{jellyfin}} user
+      ansible.builtin.user:
+        name: "{{ app }}"
+        uid: 1111
+        groups: render
+        password: "{{ password }}"
+    
+    - name: Check if Jellyfin is installed
+      ansible.builtin.package_facts:
+        manager: apt
+      no_log: true
+
+    - name: Install Jellyfin
+      when: "'jellyfin' not in ansible_facts.packages"
+      block:
+        - name: Install software-properties-common
+          ansible.builtin.apt:
+            pkg:
+              - software-properties-common
+
+        # - name: Add Universe repository
+        #   apt_repository:
+        #     repo: universe
+        #     state: present
+
+        - name: Create keyrings directory
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
+
+        - name: Download and install Jellyfin GPG key
+          ansible.builtin.get_url:
+            url: https://repo.jellyfin.org/jellyfin_team.gpg.key
+            dest: /tmp/jellyfin.gpg.key
+          register: gpg_key
+
+        - name: Import GPG key
+          shell: cat /tmp/jellyfin.gpg.key | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg
+          when: gpg_key.changed
+
+        - name: Create Jellyfin repository source
+          copy:
+            dest: /etc/apt/sources.list.d/jellyfin.sources
+            mode: '0644'
+            content: |
+              Types: deb
+              URIs: https://repo.jellyfin.org/{{ ansible_distribution | lower }}
+              Suites: {{ ansible_distribution_release }}
+              Components: main
+              Architectures: {{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}
+              Signed-By: /etc/apt/keyrings/jellyfin.gpg
+
+        - name: Update apt cache
+          apt:
+            update_cache: yes
+
+        - name: Install Jellyfin
+          apt:
+            pkg: 
+            - jellyfin
+            state: present
+
+        - name: Ensure Jellyfin service is enabled and started
+          systemd:
+            name: jellyfin
+            state: started
+            enabled: yes
+
+        - name: Clean up temporary files
+          file:
+            path: /tmp/jellyfin.gpg.key
+            state: absent
+
+    # - name: Add jellyfin user to render group
+    #   ansible.builtin.user:
+    #     name: jellyfin
+    #     groups: render
+    #     append: yes
+
+- name: Update Caddy
+  ansible.builtin.import_playbook: caddy.yml
+  vars:
+    apps:
+      - hostname: "{{ hostvars.vars.app }}.home"
+        upstream_host: "{{ hostvars.vars.host_fqdn }}"
+        port: "{{ hostvars.vars.port }}"
