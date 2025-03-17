@@ -1,3 +1,9 @@
+configs:
+  caddy-basic-content:
+    file: ./Caddyfile
+    labels:
+      caddy:
+
 services:
   ntfy:
     image: binwiederhier/ntfy
@@ -51,7 +57,7 @@ services:
     ports:
       - 3000:80
     volumes:
-      - "./data:/app/backend/data"
+      - "./data_pocketid:/app/backend/data"
     # Optional healthcheck  
     healthcheck:
       test: "curl -f http://localhost/health"
@@ -62,6 +68,17 @@ services:
     labels:
       caddy: pocketid.meadows.page
       caddy.reverse_proxy: "{{upstreams 80}}"
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    volumes:
+      - ./data_kuma:/app/data
+    ports:
+      - 3001:3001
+    restart: unless-stopped
+    user: 1111:1111
+    labels:
+      caddy: kuma.meadows.page
+      caddy.reverse_proxy: "{{upstreams 3001}}"
 
 volumes:
   caddy_data: {}

@@ -46,15 +46,21 @@
         mode: '0750'
         owner: "{{ app_user.name }}"
         group: "{{ app_user.group }}"
+        recurse: yes
       register: app_folder
 
-    - name: Copy docker compose
+    - name: Copy files
       ansible.builtin.copy:
         src: "{{ app }}_docker-compose.yml"
         dest: "{{ app_folder.path }}/docker-compose.yml"
         mode: '0640'
         owner: "{{ app_user.name }}"
         group: "{{ app_user.group }}"
+      loop:
+        - src: "{{ app }}_docker-compose.yml"
+          dest: "{{ app_folder.path }}/docker-compose.yml"
+        - src: "Caddyfile"
+          dest: "{{ app_folder.path }}/Caddyfile"
 
     - name: Copy .env file
       ansible.builtin.template:

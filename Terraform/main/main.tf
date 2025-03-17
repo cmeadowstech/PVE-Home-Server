@@ -156,3 +156,25 @@ module "auth" {
   password     = var.password
   storage_size = "16G"
 }
+
+module "homeassistant" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "homeassistant"
+  cores        = 2
+  memory       = 4096
+  password     = var.password
+  storage_size = "32G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "32G"
+    }
+  ]
+}

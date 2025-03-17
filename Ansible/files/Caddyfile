@@ -1,0 +1,4 @@
+jellyfin.meadows.page {
+    respond / "Hello World" 200
+    tls internal
+}

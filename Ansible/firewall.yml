@@ -2,8 +2,6 @@
 - name: OPNSense configuration
   hosts: firewall
   gather_facts: true
-  # roles:
-  #   - caddy
   tasks:
     - name: Display specific facts
       ansible.builtin.debug:

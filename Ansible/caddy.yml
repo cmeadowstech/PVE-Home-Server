@@ -2,7 +2,7 @@
   hosts: firewall
   tasks:
     - name: Add apps to technitium
-      ansible.builtin.script: technitium_script.sh -h {{ hostvars.vars.app }} -d firewall.home
+      ansible.builtin.script: technitium_script.sh -h {{ item.hostname }} -d firewall.home
       loop: "{{ apps }}"
       environment:
         TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
@@ -10,15 +10,64 @@
 
     - name: Create Caddy configs for services
       ansible.builtin.copy:
+        dest: "/usr/local/etc/caddy/caddy.d/security.global"
+        mode: '0644'
+        content: |
+          security {
+            oauth identity provider generic {
+              delay_start 3
+              realm generic
+              driver generic
+              client_id {{ POCKETID_CLIENT_ID }}
+              client_secret {{ POCKETID_SECRET }}
+              scopes openid email profile
+              base_auth_url https://pocketid.meadows.page
+              metadata_url https://pocketid.meadows.page/.well-known/openid-configuration
+            }
+
+            authentication portal myportal {
+              crypto default token lifetime 3600
+              enable identity provider generic
+              cookie insecure on
+
+              transform user {
+                match realm generic
+                action add role user
+              }
+            }
+
+            authorization policy mypolicy {
+              set auth url /caddy-security/oauth2/generic
+              allow roles user
+              inject headers with claims
+            }
+          }
+      notify: Restart caddy
+
+    - name: Create Caddy configs for services
+      ansible.builtin.copy:
         dest: "/usr/local/etc/caddy/caddy.d/{{ item.hostname.split('.')[0] }}.conf"
         mode: '0644'
         content: |
-          {{ item.hostname }}:80 {
-              reverse_proxy {{ item.upstream_host }}:{{ item.port }}
+          {{ item.hostname }}.home {
+              tls internal
+
+              @auth {
+                path /caddy-security/*
+              }
+
+              route @auth {
+                authenticate with myportal
+              }
+              
+              route /* {
+                authorize with mypolicy
+                reverse_proxy {{ item.upstream_host }}:{{ item.port }}
+              }
           }
       notify: Restart caddy
       loop: "{{ apps }}"
-  
+
   handlers:
     - name: Restart caddy
       ansible.builtin.service:

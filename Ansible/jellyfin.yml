@@ -97,6 +97,6 @@
   ansible.builtin.import_playbook: caddy.yml
   vars:
     apps:
-      - hostname: "{{ hostvars.vars.app }}.home"
+      - hostname: "{{ hostvars.vars.app }}"
         upstream_host: "{{ hostvars.vars.host_fqdn }}"
         port: "{{ hostvars.vars.port }}"

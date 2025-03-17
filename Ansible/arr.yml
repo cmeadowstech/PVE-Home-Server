@@ -1,0 +1,118 @@
+---
+- name: Preconfigure pod
+  hosts: pod.home
+  vars:
+    app: arr
+    user: pod
+  roles:
+    - update
+  tasks:
+    - name: Create group - {{ user }}
+      ansible.builtin.group:
+        name: "{{ user }}"
+        gid: 101111
+        state: present
+      register: app_group
+
+    - name: Create user - {{ user }}
+      ansible.builtin.user:
+        name: "{{ user }}"
+        groups:
+          - "{{ app_group.name }}"
+        uid: 101111
+        group: "{{ user }}"
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+      register: app_user
+
+    - name: Create PostgreSQL user
+      delegate_to: localhost
+      community.postgresql.postgresql_user:
+        name: "{{ app }}"
+        password: "{{ password }}"
+        login_host: db.home
+        login_user: cmeadows
+        login_password: "{{ password }}"
+        db: postgres
+      register: pg_user
+
+    - name: Create PostgreSQL databases
+      delegate_to: localhost
+      community.postgresql.postgresql_db:
+        name: "{{ item }}"
+        state: present
+        owner: "{{ app }}"
+        encoding: SQL_ASCII
+        template: template0
+        login_host: db.home
+        login_user: cmeadows
+        login_password: "{{ password }}"
+      loop: 
+        - sonarr-main
+        - sonarr-log
+        - radarr-main
+        - radarr-log
+        - prowlarr-main
+        - prowlarr-log
+        - jellyseerr
+        
+    - name: Create config folder
+      ansible.builtin.file:
+        path: "/mnt/config/{{ item }}"
+        state: directory
+        mode: '0750'
+        owner: "{{ user }}"
+        group: "{{ user }}"
+      with_items:
+        - radarr
+        - sonarr
+        - prowlarr
+        - jellyseerr
+        - bazarr
+
+    - name: Create app folder
+      ansible.builtin.file:
+        path: "/src/{{ app }}"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+      register: app_folder
+
+    - name: Copy docker compose
+      ansible.builtin.template:
+        src: "{{ app }}_docker-compose.yml.j2"
+        dest: "{{ app_folder.path }}/docker-compose.yml"
+        mode: '0640'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Copy .env file
+      ansible.builtin.template:
+        src: "pocketid.env.j2"
+        dest: "{{ app_folder.path }}/pocketid.env"
+        mode: '0644'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Create data folder
+      ansible.builtin.file:
+        path: "{{ app_folder.path }}/data"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Create and start from docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_folder.path }}"
+      register: compose_output
+
+- name: Update Caddy
+  ansible.builtin.import_playbook: caddy.yml
+  vars:
+    apps:
+      - hostname: "bazarr"
+        upstream_host: "{{ hostvars.vars.host_fqdn }}"
+        port: "6767"

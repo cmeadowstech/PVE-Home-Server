@@ -63,3 +63,17 @@ variable "ostemplate" {
   type        = string
   default     = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
 }
+
+# modules/mountpoints/variables.tf
+variable "mountpoints" {
+  description = "List of mountpoint configurations"
+  type = list(object({
+    key     = string
+    slot    = number
+    storage = string
+    volume  = string
+    mp      = string
+    size    = string
+  }))
+  default = []
+}

@@ -46,6 +46,18 @@ resource "proxmox_lxc" "lxc" {
     }
   }
 
+  dynamic "mountpoint" {
+    for_each = var.mountpoints
+    content {
+      key     = mountpoint.value.key
+      slot    = mountpoint.value.slot
+      storage = mountpoint.value.storage
+      volume  = mountpoint.value.volume
+      mp      = mountpoint.value.mp
+      size    = mountpoint.value.size
+    }
+  }
+
   features {
     nesting = var.nesting
   }

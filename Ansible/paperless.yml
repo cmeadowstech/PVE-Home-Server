@@ -5,12 +5,12 @@
     - update
     - docker_compose
 
-- name: Update LXC .conf
-  ansible.builtin.import_playbook: lxc_conf.yml
-  vars:
-    id: "{{ hostvars.vars.container_id_fact }}"
-    lxc_config_block: |
-      mp0: /storage/Documents,mp=/mnt/documents
+# - name: Update LXC .conf
+#   ansible.builtin.import_playbook: lxc_conf.yml
+#   vars:
+#     id: "{{ hostvars.vars.container_id_fact }}"
+#     lxc_config_block: |
+#       mp0: /storage/Documents,mp=/mnt/documents
 
 - name: Setup paperless
   hosts: paperless.home 
@@ -81,7 +81,7 @@
           with_items:
             - src: "{{ app }}_docker-compose.yml.j2"
               dest: "/src/{{ app }}/docker-compose.yml"
-            - src: "docker-compose.env.j2"
+            - src: "{{ app }}_docker-compose.env.j2"
               dest: "/src/{{ app }}/docker-compose.env"
 
         - name: Create and start paperless
@@ -92,6 +92,6 @@
   ansible.builtin.import_playbook: caddy.yml
   vars:
     apps:
-      - hostname: "{{ hostvars.vars.host_fqdn }}"
+      - hostname: "{{ hostvars.vars.host }}"
         upstream_host: "{{ hostvars.vars.host_fqdn }}"
         port: 8000

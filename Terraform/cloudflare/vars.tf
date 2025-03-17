@@ -13,3 +13,9 @@ variable "vps_ip" {
   type    = string
   default = "173.255.230.134"
 }
+
+variable "vps_domains" {
+  description = "List of domain names to point to the VPS IP"
+  type        = list(string)
+  default     = ["ntfy", "pocketid", "kuma", "jellyfin"]
+}
