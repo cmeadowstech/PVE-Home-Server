@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euo pipefail
+
+# Configuration
+export RESTIC_REPOSITORY="/mnt/backup/restic-repo"
+export RESTIC_PASSWORD="{{ RESTIC_PASSWORD }}"  # Create this file with your password
+BACKUP_DIRS=(
+    "/mnt/storage/Documents"
+    "/mnt/storage/git"
+    "/mnt/storage/config"
+    "/mnt/storage/Media"
+)
+RETENTION_POLICY="--keep-daily 7 --keep-weekly 4 --keep-monthly 6"
+LOG_FILE="/var/log/restic-backup.log"
+# EXCLUDE_FILE="/etc/restic/excludes.txt"  # Create this file with patterns to exclude
+
+# Ensure repository exists
+if [ ! -d "$RESTIC_REPOSITORY" ]; then
+    echo "Initializing repository at $RESTIC_REPOSITORY" | tee -a "$LOG_FILE"
+    restic init
+fi
+
+# Run backup
+echo "Starting backup at $(date)" | tee -a "$LOG_FILE"
+
+# Check repository before backup
+echo "Checking repository integrity" | tee -a "$LOG_FILE"
+restic check
+
+# Perform backup with optimizations
+restic backup \
+    --verbose \
+    --skip-if-unchanged \
+    --one-file-system \
+    --tag "scheduled" \
+    "${BACKUP_DIRS[@]}" 2>&1 | tee -a "$LOG_FILE"
+
+# Run forget with policy
+echo "Applying retention policy" | tee -a "$LOG_FILE"
+restic forget \
+    --prune \
+    $RETENTION_POLICY \
+    --tag "scheduled" 2>&1 | tee -a "$LOG_FILE"
+
+# Check repository after operations
+echo "Verifying repository" | tee -a "$LOG_FILE"
+restic check 2>&1 | tee -a "$LOG_FILE"
+
+echo "Backup completed at $(date)" | tee -a "$LOG_FILE"

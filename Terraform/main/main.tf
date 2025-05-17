@@ -107,6 +107,25 @@ module "storage" {
   memory       = 2048
   password     = var.password
   storage_size = "8G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage"
+      volume  = "/storage"
+      mp      = "/mnt/storage"
+      size    = "11T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/backup"
+      volume  = "/backup"
+      mp      = "/mnt/backup"
+      size    = "3300G"
+    }
+  ]
 }
 
 module "pod" {

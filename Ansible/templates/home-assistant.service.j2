@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User={{ user }}
-ExecStart={{ config_dir.path }}/bin/hass --config {{ config_dir.path }}
+ExecStart={{ config_dir.path }}/venv/bin/hass --config {{ config_dir.path }}
 
 [Install]
 WantedBy=multi-user.target

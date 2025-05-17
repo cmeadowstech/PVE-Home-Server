@@ -20,6 +20,7 @@
           - libwbclient0
           - winbind
           - wsdd
+          - restic
         state: present
 
     - name: Create admin group
@@ -96,6 +97,36 @@
         - nmbd
         - wsdd
 
+    - name: Restic block
+      block:
+        - name: Initialize restic repository
+          ansible.builtin.command:
+            cmd: restic init --repo /mnt/backup/restic-repo
+          args:
+            creates: /mnt/backup/restic-repo/config
+          environment:
+            RESTIC_PASSWORD: "{{ RESTIC_PASSWORD }}"
+          register: restic_init_result
+
+        - name: Update restic to latest version
+          shell: restic self-update
+          register: restic_update_result
+          changed_when: "'restic is up to date' not in restic_update_result.stdout"
+
+        - name: Copy backup script template
+          ansible.builtin.template:
+            src: backup.sh.j2
+            dest: /usr/local/bin/backup.sh
+            mode: '0755'
+
+        - name: Ensure the cron job exists to run backup.sh once a day
+          ansible.builtin.cron:
+            name: "Daily Backup"
+            job: "/usr/local/bin/backup.sh"
+            minute: "0"
+            hour: "2"  # This sets the job to run at 2:00 AM every day
+            user: root  # Run the cron job as the root user
+
   handlers:
     - name: Restart samba
       ansible.builtin.service:
@@ -106,17 +137,17 @@
         - nmbd
         - wsdd
 
-- name: Update LXC .conf
-  ansible.builtin.import_playbook: lxc_conf.yml
-  vars:
-    id: "{{ hostvars.vars.container_id_fact }}"
-    lxc_config_block: |
-      mp0: /storage,mp=/mnt/storage
+# - name: Update LXC .conf
+#   ansible.builtin.import_playbook: lxc_conf.yml
+#   vars:
+#     id: "{{ hostvars.vars.container_id_fact }}"
+#     lxc_config_block: |
+#       mp0: /storage,mp=/mnt/storage
 
-- name: Update Caddy
-  ansible.builtin.import_playbook: caddy.yml
-  vars:
-    apps:
-      - hostname: syncthing.home
-        upstream_host: "{{ hostvars.vars.host_fqdn }}"
-        port: 8384
+# - name: Update Caddy
+#   ansible.builtin.import_playbook: caddy.yml
+#   vars:
+#     apps:
+#       - hostname: syncthing.home
+#         upstream_host: "{{ hostvars.vars.host_fqdn }}"
+#         port: 8384
