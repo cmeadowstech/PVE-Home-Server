@@ -1,0 +1,74 @@
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+
+  routers:
+    # HTTP to HTTPS redirect router
+    main-app-router-redirect:
+      rule: "Host(`pangolin.meadows.page`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: next-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    # Next.js router (handles everything except API and WebSocket paths)
+    next-router:
+      rule: "Host(`pangolin.meadows.page`) && !PathPrefix(`/api/v1`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: next-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # API router (handles /api/v1 paths)
+    api-router:
+      rule: "Host(`pangolin.meadows.page`) && PathPrefix(`/api/v1`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # WebSocket router
+    ws-router:
+      rule: "Host(`pangolin.meadows.page`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    int-api-router-redirect:
+      rule: "Host(`api.meadows.page`)"
+      service: int-api-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    int-api-router:
+      rule: "Host(`api.meadows.page`)"
+      service: int-api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    next-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3002" # Next.js server
+
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3000" # API/WebSocket server
+
+    int-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3003" # Integration API

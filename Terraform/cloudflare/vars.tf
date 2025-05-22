@@ -17,5 +17,5 @@ variable "vps_ip" {
 variable "vps_domains" {
   description = "List of domain names to point to the VPS IP"
   type        = list(string)
-  default     = ["ntfy", "pocketid", "kuma", "jellyfin"]
+  default     = ["ntfy", "pocketid", "kuma", "jellyfin", "pangolin", "gerbil", "api"]
 }

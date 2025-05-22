@@ -2,13 +2,13 @@
 - name: Preconfigure vps
   hosts: vps
   vars:
-    ip: "66.175.209.144"
+    ip: "173.255.230.134"
     app: vps
     wg_conf_file: vps_wg
   roles:
     - update
     - docker_compose
-    - wireguard
+    # - wireguard
   tasks:
     - name: Add A record to Technitium DNS
       delegate_to: localhost
@@ -81,4 +81,5 @@
     - name: Create and start from docker-compose
       community.docker.docker_compose_v2:
         project_src: "{{ app_folder.path }}"
+        remove_orphans: true
       register: compose_output

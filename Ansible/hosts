@@ -17,6 +17,7 @@ code.home
 game.home
 auth.home
 homeassistant.home
+library.home
 
 [pve_server]
 10.0.10.2

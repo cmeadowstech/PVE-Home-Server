@@ -39,32 +39,6 @@ module "video" {
   storage_size = "100G"
 }
 
-module "games" {
-  depends_on = [module.technitium]
-  source     = "../modules/lxc"
-
-  hostname     = "games"
-  cores        = 8
-  memory       = 8192
-  password     = var.password
-  unprivileged = false
-  storage_size = "300G"
-  # Nesting might need to be enabled manually post deployment
-}
-
-module "game" {
-  depends_on = [module.technitium]
-  source     = "../modules/lxc"
-
-  hostname     = "game"
-  cores        = 8
-  memory       = 8192
-  password     = var.password
-  unprivileged = false
-  storage_size = "300G"
-  nesting = true
-}
-
 module "download" {
   depends_on = [module.technitium]
   source     = "../modules/lxc"
@@ -194,6 +168,47 @@ module "homeassistant" {
       volume  = "/storage/config"
       mp      = "/mnt/config"
       size    = "32G"
+    }
+  ]
+}
+
+module "library" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "library"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  storage_size = "16G"
+
+  unprivileged = false
+  nesting      = true
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "1T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/storage/Media/Books"
+      volume  = "/storage/Media/Books"
+      mp      = "/mnt/Books"
+      size    = "1T"
+    },
+    {
+      key     = "2"
+      slot    = 2
+      storage = "/storage/Media/cwa-book-ingest"
+      volume  = "/storage/Media/cwa-book-ingest"
+      mp      = "/mnt/cwa-book-ingest"
+      size    = "1T"
     }
   ]
 }
