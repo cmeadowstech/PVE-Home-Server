@@ -1,0 +1,11 @@
+[Unit]
+Description=Newt VPN Client
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/newt --id {{ NEWT_ID }} --secret {{ NEWT_SECRET }} --endpoint https://pangolin.meadows.page
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,2 +1,7 @@
 ---
-# handlers file for pangolin_site
+- name: Restart newt
+  ansible.builtin.systemd:
+    name: newt
+    state: restarted
+    enabled: yes
+    daemon_reload: yes

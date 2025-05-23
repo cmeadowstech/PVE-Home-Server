@@ -1,11 +1,12 @@
 common:
   daemonize: true
   log_media: file
-  log_level: info
+  log_level: debug
   log_dir: /var/log/
   log_max_size: 20
   compress_logs: true
   log_max_files: 10
+  save_logs: true
 config_paths:
   config_dir: /etc/crowdsec/
   data_dir: /var/lib/crowdsec/data/
@@ -63,8 +64,3 @@ prometheus:
   level: full
   listen_addr: 127.0.0.1
   listen_port: 6060
-server:
-  integration_port: 3003
-
-flags:
-  enable_integration_api: true

@@ -4,6 +4,7 @@
   roles:
     - update
     - docker_compose
+    - pangolin_site
   vars:
     app: library
   tasks:
