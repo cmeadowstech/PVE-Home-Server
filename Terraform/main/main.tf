@@ -212,3 +212,14 @@ module "library" {
     }
   ]
 }
+
+module "newt" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "newt"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  storage_size = "8G"
+}

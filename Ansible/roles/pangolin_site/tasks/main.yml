@@ -36,7 +36,7 @@
         newtId: "{{ NEWT_ID }}"
         secret: "{{ NEWT_SECRET }}"
         exitNodeId: 1
-        subnet: "0.0.0.0/0"
+        subnet: "100.89.128.4/30"
       status_code: 200,201,202
       return_content: false
 

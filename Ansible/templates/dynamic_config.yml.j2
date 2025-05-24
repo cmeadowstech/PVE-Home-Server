@@ -3,6 +3,36 @@ http:
     redirect-to-https:
       redirectScheme:
         scheme: https
+    geoblock:
+      plugin:
+        geoblock:
+          silentStartUp: false
+          allowLocalRequests: true
+          logLocalRequests: false # change to true to see logs and verify if it is working
+          logAllowedRequests: false # change to true to see logs and verify if it is working
+          logApiRequests: false # change to true to see logs and verify if it is working
+          api: "https://get.geojs.io/v1/ip/country/{ip}"
+          apiTimeoutMs: 500
+          cacheSize: 25
+          forceMonthlyUpdate: true
+          allowUnknownCountries: false
+          unknownCountryApiResponse: "nil"
+          blackListMode: false
+          countries:
+            - US
+    my-fail2ban:
+      plugin:
+        fail2ban:
+          allowlist:
+            ip: ::1,127.0.0.1
+          denylist:
+            ip: 192.168.0.0/24
+          rules:
+            bantime: 3h
+            enabled: "true"
+            findtime: 10m
+            maxretry: "4"
+            statuscode: 400,401,403-499
 
   routers:
     # HTTP to HTTPS redirect router
@@ -22,6 +52,10 @@ http:
         - websecure
       tls:
         certResolver: letsencrypt
+        domains:
+          - main: "meadows.page"
+            sans:
+              - "*.meadows.page"
 
     # API router (handles /api/v1 paths)
     api-router:

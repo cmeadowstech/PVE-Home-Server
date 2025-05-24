@@ -18,6 +18,7 @@ game.home
 auth.home
 homeassistant.home
 library.home
+newt.home
 
 [pve_server]
 10.0.10.2

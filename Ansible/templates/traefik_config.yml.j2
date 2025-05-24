@@ -14,6 +14,12 @@ experimental:
     badger:
       moduleName: "github.com/fosrl/badger"
       version: "v1.1.0"
+    geoblock:
+      moduleName: github.com/PascalMinder/geoblock
+      version: v0.3.2
+    fail2ban:
+      moduleName: "github.com/tomMoulard/fail2ban"
+      version: "v0.8.3"
 
 log:
   level: "INFO"
@@ -22,8 +28,8 @@ log:
 certificatesResolvers:
   letsencrypt:
     acme:
-      httpChallenge:
-        entryPoint: web
+      dnsChallenge:
+        provider: "cloudflare"
       email: codyrm@gmail.com # REPLACE THIS WITH YOUR EMAIL
       storage: "/letsencrypt/acme.json"
       caServer: "https://acme-v02.api.letsencrypt.org/directory"
@@ -39,6 +45,8 @@ entryPoints:
     http:
       tls:
         certResolver: "letsencrypt"
+      middlewares:
+        - geoblock@file
 
 serversTransport:
   insecureSkipVerify: true
