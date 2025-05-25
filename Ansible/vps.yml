@@ -59,8 +59,6 @@
       loop:
         - src: "{{ app }}_docker-compose.yml"
           dest: "{{ app_folder.path }}/docker-compose.yml"
-        - src: "Caddyfile"
-          dest: "{{ app_folder.path }}/Caddyfile"
 
     - name: Copy .env file
       ansible.builtin.template:

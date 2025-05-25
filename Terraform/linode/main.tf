@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     linode = {
-      source  = "linode/linode"
+      source = "linode/linode"
     }
   }
 }
@@ -13,28 +13,28 @@ resource "random_password" "password" {
   special          = true
   upper            = true
   lower            = true
-  numeric           = true
+  numeric          = true
   override_special = "!@#$%&*()_+-=[]{}<>?"
 }
 
 resource "linode_instance" "my-instance" {
-    label = "vps"
-    region = "us-east"
-    type = "g6-nanode-1"
+  label  = "vps"
+  region = "us-east"
+  type   = "g6-nanode-1"
 }
 
 resource "linode_instance_config" "my-config" {
   linode_id = linode_instance.my-instance.id
-  label = "my-config"
+  label     = "my-config"
   virt_mode = "fullvirt"
 
   interface {
     purpose = "public"
-  }  
+  }
 
   device {
     device_name = "sda"
-    disk_id = linode_instance_disk.boot.id
+    disk_id     = linode_instance_disk.boot.id
   }
 
   helpers {
@@ -45,12 +45,12 @@ resource "linode_instance_config" "my-config" {
 }
 
 resource "linode_instance_disk" "boot" {
-  label = "boot"
+  label     = "boot"
   linode_id = linode_instance.my-instance.id
-  size = linode_instance.my-instance.specs.0.disk
+  size      = linode_instance.my-instance.specs.0.disk
 
-  image = "linode/debian12"
-  root_pass = random_password.password.result
+  image           = "linode/debian12"
+  root_pass       = random_password.password.result
   authorized_keys = [var.PUBLIC_KEY]
 }
 
@@ -93,7 +93,7 @@ resource "linode_firewall" "my-firewall" {
     ipv6     = ["::/0"]
   }
 
-  inbound_policy = "DROP"
+  inbound_policy  = "DROP"
   outbound_policy = "ACCEPT"
 
   linodes = [linode_instance.my-instance.id]

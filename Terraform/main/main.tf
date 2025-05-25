@@ -8,10 +8,10 @@ terraform {
 }
 
 provider "proxmox" {
-  pm_api_url          = "https://10.0.10.2:8006/api2/json"
-  pm_tls_insecure     = true
-  pm_user     = var.PM_USER
-  pm_password = var.PM_PASS
+  pm_api_url      = "https://10.0.10.2:8006/api2/json"
+  pm_tls_insecure = true
+  pm_user         = var.PM_USER
+  pm_password     = var.PM_PASS
   # pm_debug            = true
 }
 
@@ -45,21 +45,32 @@ module "download" {
 
   hostname     = "download"
   cores        = 2
-  memory       = 2048
+  memory       = 4096
   password     = var.password
   storage_size = "100G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/Downloads"
+      volume  = "/storage/Downloads"
+      mp      = "/mnt/downloads"
+      size    = "11T"
+    }
+  ]
 }
 
-module "monitor" {
-  depends_on = [module.technitium]
-  source     = "../modules/lxc"
+# module "monitor" {
+#   depends_on = [module.technitium]
+#   source     = "../modules/lxc"
 
-  hostname     = "monitor"
-  cores        = 4
-  memory       = 4090
-  password     = var.password
-  storage_size = "25G"
-}
+#   hostname     = "monitor"
+#   cores        = 4
+#   memory       = 4090
+#   password     = var.password
+#   storage_size = "25G"
+# }
 
 module "db" {
   depends_on = [module.technitium]
@@ -113,6 +124,33 @@ module "pod" {
   storage_size = "200G"
   unprivileged = false
   nesting      = true
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/streaming"
+      volume  = "/storage/streaming"
+      mp      = "/mnt/media"
+      size    = "11T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "11T"
+    },
+    {
+      key     = "2"
+      slot    = 2
+      storage = "/storage/Downloads"
+      volume  = "/storage/Downloads"
+      mp      = "/mnt/downloads"
+      size    = "11T"
+    }
+  ]
 }
 
 module "paperless" {

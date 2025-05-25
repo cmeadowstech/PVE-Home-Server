@@ -2,7 +2,7 @@ version: "3.8"
 services:
   web:
     container_name: web
-    image: ghcr.io/hoarder-app/hoarder-web:${HOARDER_VERSION:-release}
+    image: ghcr.io/karakeep-app/karakeep:${HOARDER_VERSION:-release}
     restart: unless-stopped
     volumes:
       - /mnt/config/hoarder/data:/data
@@ -13,15 +13,12 @@ services:
     environment:
       PUID: 101111
       PGID: 101111
-      REDIS_HOST: redis
       MEILI_ADDR: http://meilisearch:7700
       DATA_DIR: /data
-  redis:
-    image: redis:7.2-alpine
-    restart: unless-stopped
-    volumes:
-      - redis:/data
+      BROWSER_WEB_URL: http://chrome:9222
+      OPENAI_API_KEY: {{ openai_key }}
   chrome:
+    container_name: chrome
     image: gcr.io/zenika-hub/alpine-chrome:123
     restart: unless-stopped
     command:
@@ -32,6 +29,7 @@ services:
       - --remote-debugging-port=9222
       - --hide-scrollbars
   meilisearch:
+    container_name: meilisearch
     image: getmeili/meilisearch:v1.6
     restart: unless-stopped
     env_file:
@@ -40,31 +38,8 @@ services:
       MEILI_NO_ANALYTICS: "true"
     volumes:
       - meilisearch:/meili_data
-  workers:
-    image: ghcr.io/hoarder-app/hoarder-workers:${HOARDER_VERSION:-release}
-    restart: unless-stopped
-    volumes:
-      - data:/data
-    env_file:
-      - .env
-    environment:
-      REDIS_HOST: redis
-      MEILI_ADDR: http://meilisearch:7700
-      BROWSER_WEB_URL: http://chrome:9222
-      DATA_DIR: /data
-      OPENAI_API_KEY: {{ openai_key }}
-    depends_on:
-      web:
-        condition: service_started
 
 volumes:
-  redis:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/config/hoarder/redis
-
   meilisearch:
     driver: local
     driver_opts:
