@@ -8,6 +8,7 @@
     comment: "Log all INPUT chain traffic"
 
 - name: Deploy Pangolin
+  notify: Restart pangolin
   block:
     - name: Set lapi key
       set_fact:
@@ -25,7 +26,6 @@
       ansible.builtin.template:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
-      notify: Restart pangolin
       with_items:
         - src: "pangolin_config.yml.j2"
           dest: "/src/pangolin/config/config.yml"
@@ -35,14 +35,6 @@
           dest: "/src/pangolin/config/traefik/dynamic_config.yml"
         - src: "journalctl.yaml.j2"
           dest: "/src/pangolin/config/crowdsec/acquis.d/journalctl.yaml"
-
-    - name: Create config folders
-      ansible.builtin.file:
-        path: "/mnt/config/{{ item }}"
-        state: directory
-      with_items:
-        - calibre-web-automated
-        - audiobookshelf
 
     - name: Copy docker files
       ansible.builtin.template:
