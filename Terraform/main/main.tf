@@ -139,17 +139,6 @@ module "code" {
   storage_size = "100G"
 }
 
-module "auth" {
-  depends_on = [module.technitium]
-  source     = "../modules/lxc"
-
-  hostname     = "auth"
-  cores        = 2
-  memory       = 2048
-  password     = var.password
-  storage_size = "16G"
-}
-
 module "homeassistant" {
   depends_on = [module.technitium]
   source     = "../modules/lxc"
