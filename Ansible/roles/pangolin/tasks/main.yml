@@ -1,0 +1,54 @@
+---
+- name: Add iptables logging rule
+  iptables:
+    chain: INPUT
+    jump: LOG
+    log_prefix: "iptables: "
+    state: present
+    comment: "Log all INPUT chain traffic"
+
+- name: Deploy Pangolin
+  block:
+    - name: Set lapi key
+      set_fact:
+        lapi_key: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=32') }}"
+
+    - name: Create app folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "/src/pangolin/config/crowdsec/acquis.d"
+        - "/src/pangolin/config/traefik"
+
+    - name: Copy config files
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      notify: Restart pangolin
+      with_items:
+        - src: "pangolin_config.yml.j2"
+          dest: "/src/pangolin/config/config.yml"
+        - src: "traefik_config.yml.j2"
+          dest: "/src/pangolin/config/traefik/traefik_config.yml"
+        - src: "dynamic_config.yml.j2"
+          dest: "/src/pangolin/config/traefik/dynamic_config.yml"
+        - src: "journalctl.yaml.j2"
+          dest: "/src/pangolin/config/crowdsec/acquis.d/journalctl.yaml"
+
+    - name: Create config folders
+      ansible.builtin.file:
+        path: "/mnt/config/{{ item }}"
+        state: directory
+      with_items:
+        - calibre-web-automated
+        - audiobookshelf
+
+    - name: Copy docker files
+      ansible.builtin.template:
+        src: "pangolin_docker-compose.yml.j2"
+        dest: "/src/pangolin/docker-compose.yml"
+
+    - name: Create and start pangolin
+      community.docker.docker_compose_v2:
+        project_src: /src/pangolin
