@@ -27,7 +27,7 @@ services:
     volumes:
       - /mnt/Books:/audiobooks
       - /mnt/Books:/podcasts
-      - /mnt/config/calibre-web-automated:/config
+      - /mnt/config/audiobookshelf:/config
       - /src/library:/metadata
     environment:
       - TZ=America/New_York

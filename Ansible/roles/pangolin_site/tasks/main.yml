@@ -54,12 +54,3 @@
       dest: /lib/systemd/system/newt.service
       mode: '0644'
   notify: Restart newt
-
-- name: Debug NEWT_ID
-  debug:
-    msg: "NEWT_ID value is: {{ NEWT_ID }}"
-    verbosity: 0
-
-
-
-

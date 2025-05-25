@@ -18,6 +18,6 @@ resource "cloudflare_dns_record" "vps_domains" {
   name    = each.value
   content = var.vps_ip
   type    = "A"
-  proxied = true
+  proxied = false
   ttl     = 1
 }

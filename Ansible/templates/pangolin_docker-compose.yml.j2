@@ -48,6 +48,22 @@ services:
       - ./config/letsencrypt:/letsencrypt # Volume to store the Let's Encrypt certificates
     environment:
       CLOUDFLARE_DNS_API_TOKEN: "{{ CLOUDFLARE_API_KEY }}"
+
+  # If for some reason the bouncer isn't connecting, I think it can get cached incorrectly?
+  # docker compose exec crowdsec cscli bouncers delete TRAEFIK
+  # docker compose exec crowdsec cscli bouncers add TRAEFIK --key {{ lapi_key }}
+  crowdsec:
+    container_name: crowdsec
+    image: crowdsecurity/crowdsec:latest-debian
+    environment:
+      COLLECTIONS: crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/linux crowdsecurity/iptables
+      BOUNCER_KEY_TRAEFIK: {{ lapi_key }}
+    volumes:
+      - ./config/crowdsec:/etc/crowdsec
+      - ./config/crowdsec/db:/var/lib/crowdsec/data
+      - ./config/traefik/logs:/var/log/traefik:ro
+      - /var/log/journal:/var/log/host:ro
+
 networks:
   default:
     driver: bridge

@@ -20,7 +20,7 @@ http:
           blackListMode: false
           countries:
             - US
-    my-fail2ban:
+    fail2ban:
       plugin:
         fail2ban:
           allowlist:
@@ -33,6 +33,14 @@ http:
             findtime: 10m
             maxretry: "4"
             statuscode: 400,401,403-499
+    crowdsec:
+      plugin:
+        bouncer:
+          CrowdsecLapiKey: {{ lapi_key }}
+          CrowdsecLapiUrl: "http://crowdsec:8080"
+          Enabled: "true"
+          UpdateIntervalSeconds: 60
+          DefaultDecisionTimeout: 60
 
   routers:
     # HTTP to HTTPS redirect router

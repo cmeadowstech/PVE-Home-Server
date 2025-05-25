@@ -33,21 +33,7 @@ services:
         retries: 3
         start_period: 40s
     restart: unless-stopped
-    # labels:
-    #   caddy: ntfy.meadows.page
-    #   caddy.reverse_proxy: "{{upstreams 80}}"
-  # caddy:
-  #   image: lucaslorentz/caddy-docker-proxy:ci-alpine
-  #   container_name: caddy
-  #   ports:
-  #     - 80:80
-  #     - 443:443
-  #   environment:
-  #     - CADDY_INGRESS_NETWORKS=vps_default
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #     - caddy_data:/data
-  #   restart: unless-stopped
+
   pocket-id:
     image: ghcr.io/pocket-id/pocket-id
     container_name: pocketid
@@ -55,35 +41,28 @@ services:
     restart: unless-stopped
     env_file: pocketid.env
     ports:
-      - 3000:80
+      - 1411:1411
     volumes:
-      - "./data_pocketid:/app/backend/data"
-    # Optional healthcheck  
+      - ./data_pocketid/data:/app/data
     healthcheck:
-      test: "curl -f http://localhost/health"
+      test: "curl -f http://localhost:1411/healthz"
       interval: 1m30s
       timeout: 5s
       retries: 2
       start_period: 10s
-    # labels:
-    #   caddy: pocketid.meadows.page
-    #   caddy.reverse_proxy: "{{upstreams 80}}"
+
   uptime-kuma:
     image: louislam/uptime-kuma:1
+    container_name: kuma
     volumes:
       - ./data_kuma:/app/data
     ports:
       - 3001:3001
     restart: unless-stopped
     user: 1111:1111
-    # labels:
-    #   caddy: kuma.meadows.page
-    #   caddy.reverse_proxy: "{{upstreams 3001}}"
+
 networks:
   default:
     driver: bridge
     name: pangolin
     external: true
-
-# volumes:
-#   caddy_data: {}
