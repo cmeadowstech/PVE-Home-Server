@@ -1,0 +1,16 @@
+---
+services:
+  audiobookshelf:
+    container_name: {{ app_name }}
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    ports:
+      - {{ port }}:80
+    volumes:
+      - /mnt/Books:/audiobooks
+      - /mnt/Books:/podcasts
+      - /mnt/config/{{ app_name }}:/config
+      - /src/{{ app_name }}:/metadata
+    environment:
+      - TZ=America/New_York
+      - PUID=101111
+      - PGID=101111

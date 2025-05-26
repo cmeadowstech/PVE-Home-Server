@@ -1,0 +1,4 @@
+---
+app_name: calibre-web-automated
+port: 8083
+subdomain: cwa

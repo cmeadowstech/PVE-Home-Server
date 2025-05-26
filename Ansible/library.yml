@@ -4,44 +4,7 @@
   roles:
     - update
     - docker_compose
+    - audiobookshelf
+    - calibre-web-automated
   vars:
-    app: library
-  tasks:
-    - name: Create app folders
-      ansible.builtin.file:
-        path: /src/{{ app }}
-        state: directory
-    
-    - name: Create config folders
-      ansible.builtin.file:
-        path: /mnt/config/{{ item }}
-        state: directory
-      with_items:
-        - calibre-web-automated
-        - audiobookshelf
-
-    - name: Copy docker files
-      ansible.builtin.template:
-        src: "{{ app }}_docker-compose.yml.j2"
-        dest: "/src/{{ app }}/docker-compose.yml"
-
-    - name: Create and start {{ app }}
-      community.docker.docker_compose_v2:
-        project_src: /src/{{ app }}
-
-    # - name: Add {{ app }} to technitium
-    #   ansible.builtin.script: technitium_script.sh -h {{ app }} -d firewall.home
-    #   environment:
-    #     TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
-    #   delegate_to: localhost
-
-- name: Update Caddy
-  ansible.builtin.import_playbook: caddy.yml
-  vars:
-    apps:
-      - hostname: "cwa.home"
-        upstream_host: "{{ hostvars.vars.host_fqdn }}"
-        port: "8083"
-      - hostname: "audiobookshelf.home"
-        upstream_host: "{{ hostvars.vars.host_fqdn }}"
-        port: "13378"
+    public: true

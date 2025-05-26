@@ -42,7 +42,7 @@
       body_format: json
       body:
         name: "{{ app_name }}"
-        subdomain: "{{ app_name }}"
+        subdomain: "{{ subdomain | default(app_name) }}"
         isBaseDomain: false
         http: true
         protocol: "tcp"

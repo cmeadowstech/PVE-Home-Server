@@ -1,0 +1,22 @@
+---
+- name: Create {{ app_name }} folders
+  ansible.builtin.file:
+    path: "{{ item  }}"
+    state: directory
+  with_items:
+    - "/src/{{ app_name }}"
+    - "/mnt/config/{{ app_name }}"
+
+- name: Copy docker files
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "/src/{{ app_name }}/docker-compose.yml"
+  notify: Restart {{ app_name }}
+
+- name: Create and start {{ app_name }}
+  community.docker.docker_compose_v2:
+    project_src: /src/{{ app_name }}
+
+- name: Configure DNS and proxies
+  ansible.builtin.include_role:
+    name: proxy
