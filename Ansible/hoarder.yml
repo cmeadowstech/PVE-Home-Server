@@ -1,8 +1,0 @@
----
-- name: Set up Hoarder
-  hosts: pod.home
-  roles:
-    - update
-    - hoarder
-  vars:
-    public: true
