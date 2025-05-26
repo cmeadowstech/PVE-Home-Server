@@ -1,0 +1,5 @@
+nvidia_version: "565.77"
+nvidia_installer: "NVIDIA-Linux-x86_64-{{ nvidia_version }}.run"
+shares:
+  - name: nas
+    mount: /mnt/storage

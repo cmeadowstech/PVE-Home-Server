@@ -1,0 +1,5 @@
+---
+- name: Update all
+  hosts: earthsea
+  roles:
+    - update

@@ -1,0 +1,153 @@
+---
+- name: Setup samba
+  hosts: storage.home
+  vars:
+    user: cmeadows
+  roles:
+    - update
+    - syncthing # Might need to be run after user creation
+  tasks:
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - acl
+          - samba
+          - samba-common
+          - samba-common-bin
+          - samba-dsdb-modules
+          - samba-vfs-modules
+          - samba-libs
+          - libwbclient0
+          - winbind
+          - wsdd
+          - restic
+        state: present
+
+    - name: Create admin group
+      ansible.builtin.group:
+        name: "{{ user }}"
+        gid: 1111
+        state: present
+
+    - name: Create Samba admin user
+      ansible.builtin.user:
+        name: "{{ user | lower }}"
+        uid: 1111
+        comment: "Samba fileserver admin"
+        password: "{{ password | password_hash('sha512') }}"
+
+    - name: Configure Samba users.
+      ansible.builtin.shell: >
+        (pdbedit --user={{ user }} 2>&1 > /dev/null)
+        || (echo '{{ password }}'; echo '{{ password }}')
+        | smbpasswd -s -a {{ user }}
+      register: smbpasswd
+      changed_when: "'Added user' in smbpasswd.stdout"
+
+    - name: Copy smb.conf
+      ansible.builtin.template:
+        src: smb.conf.j2
+        dest: /etc/samba/smb.conf
+      notify:
+        - Restart samba
+
+    - name: Configure Samba template
+      ansible.builtin.copy:
+        dest: /etc/samba/import.template
+        content: |
+          [global]
+              workgroup = WORKGROUP
+              log file = /var/log/samba/log.%m
+              max log size = 1000
+              logging = file
+              panic action = /usr/share/samba/panic-action %d
+              log level = 3
+              server role = standalone server
+              obey pam restrictions = yes
+              unix password sync = yes
+              passwd program = /usr/bin/passwd %u
+              passwd chat = *Enter\snew\s*\password:* %n\n *Retype\snew\s*\spassword:* %n\n *password\supdated\ssuccessfully* .
+              pam password change = yes
+              map to guest = bad user
+              vfs objects = shadow_copy2 acl_xattr catia fruit streams_xattr
+              map acl inherit = yes
+              acl_xattr:ignore system acls = yes
+              shadow: snapdir = .zfs/snapshot
+              shadow: sort = desc
+              shadow: format = -%Y-%m-%d-%H%M
+              shadow: snapprefix = ^zfs-auto-snap_\(frequent\)\{0,1\}\(hourly\)\{0,1\}\(daily\)\{0,1\}\(weekly\)\{0,1\}\(monthly\)\{0,1\}
+              shadow: delimiter = -20
+              fruit:encoding = native
+              fruit:metadata = stream
+              fruit:zero_file_id = yes
+              fruit:nfs_aces = no
+        mode: '0644'
+
+    - name: Import Samba configuration
+      ansible.builtin.command:
+        cmd: net conf import /etc/samba/import.template
+
+    - name: Ensure Samba services are running
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - smbd
+        - nmbd
+        - wsdd
+
+    - name: Restic block
+      block:
+        - name: Initialize restic repository
+          ansible.builtin.command:
+            cmd: restic init --repo /mnt/backup/restic-repo
+          args:
+            creates: /mnt/backup/restic-repo/config
+          environment:
+            RESTIC_PASSWORD: "{{ RESTIC_PASSWORD }}"
+          register: restic_init_result
+
+        - name: Update restic to latest version
+          shell: restic self-update
+          register: restic_update_result
+          changed_when: "'restic is up to date' not in restic_update_result.stdout"
+
+        - name: Copy backup script template
+          ansible.builtin.template:
+            src: backup.sh.j2
+            dest: /usr/local/bin/backup.sh
+            mode: '0755'
+
+        - name: Ensure the cron job exists to run backup.sh once a day
+          ansible.builtin.cron:
+            name: "Daily Backup"
+            job: "/usr/local/bin/backup.sh"
+            minute: "0"
+            hour: "2"  # This sets the job to run at 2:00 AM every day
+            user: root  # Run the cron job as the root user
+
+  handlers:
+    - name: Restart samba
+      ansible.builtin.service:
+        name: "{{ item  }}"
+        state: restarted
+      with_items:
+        - smbd
+        - nmbd
+        - wsdd
+
+# - name: Update LXC .conf
+#   ansible.builtin.import_playbook: lxc_conf.yml
+#   vars:
+#     id: "{{ hostvars.vars.container_id_fact }}"
+#     lxc_config_block: |
+#       mp0: /storage,mp=/mnt/storage
+
+# - name: Update Caddy
+#   ansible.builtin.import_playbook: caddy.yml
+#   vars:
+#     apps:
+#       - hostname: syncthing.home
+#         upstream_host: "{{ hostvars.vars.host_fqdn }}"
+#         port: 8384

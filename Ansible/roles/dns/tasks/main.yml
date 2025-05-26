@@ -1,0 +1,20 @@
+---
+- name: Initialize empty combined list
+  ansible.builtin.set_fact:
+    combined_vars: []
+
+- name: Load and combine YAML files
+  ansible.builtin.set_fact:
+    combined_vars: "{{ combined_vars + [lookup('file', './files/' + item.name + '_docker-compose.yml') | from_yaml] }}"
+  loop: "{{ apps }}"
+
+# - name: Use loaded variables
+#   ansible.builtin.debug:
+#     msg: "Value is {{ combined_vars }}"
+
+- name: Add apps to technitium
+  ansible.builtin.script: technitium_script.sh -h {{ item.value.container_name }} -d firewall.home
+  loop: "{{ combined_vars | map(attribute='services') | map('dict2items') | flatten }}"
+  environment:
+    TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
+  delegate_to: localhost

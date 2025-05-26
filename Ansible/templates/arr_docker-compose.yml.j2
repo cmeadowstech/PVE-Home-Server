@@ -1,0 +1,85 @@
+services:
+  radarr:
+    container_name: radarr
+    user: root:root
+    image: ghcr.io/hotio/radarr:latest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    ports:
+      - 7878:7878
+    environment:
+      - PUID=101111
+      - PGID=101111
+      - TZ=America/New_York
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/config/radarr:/config
+      - /mnt/downloads:/mnt/downloads
+      - /mnt/media:/data/media
+  sonarr:
+    container_name: sonarr
+    user: root:root
+    image: ghcr.io/hotio/sonarr:latest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    ports:
+      - 8989:8989
+    environment:
+      - PUID=101111
+      - PGID=101111
+      - TZ=America/New_York
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/config/sonarr:/config
+      - /mnt/downloads:/mnt/downloads
+      - /mnt/media:/data/media
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      LOG_LEVEL: "debug"
+      TZ: America/New_York
+      PORT: 5055 #optional
+      DB_TYPE: "postgres"      # Which DB engine to use, either "sqlite" or "postgres". The default is "sqlite".
+      DB_HOST: "db.home"       # (optional) The host (URL) of the database. The default is "localhost".
+      DB_PORT: "5432"          # (optional) The port to connect to. The default is "5432".
+      DB_USER: "arr"          # (required) Username used to connect to the database.
+      DB_PASS: "{{ password }}" # (required) Password of the user used to connect to the database.
+      DB_NAME: "jellyseerr"
+      DB_USE_SSL: 'false'
+    ports:
+      - 5055:5055
+    volumes:
+      - /mnt/config/jellyseerr:/app/config
+    restart: unless-stopped
+  bazarr:
+    container_name: bazarr
+    image: ghcr.io/hotio/bazarr
+    restart: unless-stopped
+    ports:
+      - "6767:6767"
+    environment:
+      - PUID=101111
+      - PGID=101111
+      - UMASK=002
+      - TZ=America/New_York
+      - WEBUI_PORTS=6767/tcp,6767/udp
+    volumes:
+      - /mnt/config/bazarr/config:/config
+      - /mnt/config/bazarr/data:/data
+      - /mnt/media:/data/media
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr
+    restart: unless-stopped
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=101111
+      - PGID=101111
+      - UMASK=002
+      - TZ=America/New_York
+    volumes:
+      - /mnt/config/prowlarr:/config

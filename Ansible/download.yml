@@ -1,0 +1,203 @@
+---
+- name: Preconfigure download
+  hosts: download.home
+  vars:
+    - user: downloader
+    - wg_conf_file: us-atl-wg-002
+  roles:
+    - update
+    - localroute
+    - wireguard
+
+- name: Update LXC .conf
+  ansible.builtin.import_playbook: lxc_conf.yml
+  vars:
+    id: "{{ hostvars.vars.container_id_fact }}"
+    lxc_config_block: |
+      mp0: /storage/Downloads,mp=/mnt/downloads
+
+- name: Setup downloaders
+  hosts: download.home
+  vars:
+    - user: downloader
+  tasks:
+    - name: Create group - {{ user }}
+      ansible.builtin.group:
+        name: "{{ user }}"
+        gid: 1111
+        state: present
+
+    - name: Create user - {{ user }}
+      ansible.builtin.user:
+        name: "{{ user }}"
+        uid: 1111
+        group: "{{ user }}"
+
+    - name: Install software-properties-common
+      ansible.builtin.apt:
+        pkg:
+          - software-properties-common
+        update_cache: true
+
+    - name: Add contrib non-free repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://deb.debian.org/debian/ {{ ansible_distribution_release }} main contrib non-free"
+        state: present
+
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - unrar
+          - libavahi-compat-libdnssd1
+          - p7zip-full
+          - python3-notify2
+
+    - name: Install sabnzbdplus
+      ansible.builtin.apt:
+        pkg:
+          - sabnzbdplus
+
+    - name: Set sabnzbdplus systemd
+      ansible.builtin.lineinfile:
+        path: /etc/default/sabnzbdplus
+        regexp: "{{ item.reg }}"
+        line: "{{ item.line }}"
+      with_items:
+        - reg: '^USER'
+          line: "USER={{ user }}"
+        - reg: '^HOST'
+          line: "HOST={{ inventory_hostname }}"
+      notify: Restart sabnzbdplus
+
+    - name: Configure sabnzbdplus settings
+      ansible.builtin.replace:
+        path: "/home/{{ user }}/.sabnzbd/sabnzbd.ini"
+        regexp: "{{ item.reg }}"
+        replace: "{{ item.replace }}"
+      loop:
+        - reg: '^host = .*$'
+          replace: "host = {{ inventory_hostname }}"
+        - reg: '^host_whitelist = .*$'
+          replace: "host_whitelist = {{ inventory_hostname }}"
+        - reg: '^username = .*$'
+          replace: 'username = "cmeadows"'
+        - reg: '^password = .*$'
+          replace: 'password = "{{ password }}"'
+      notify: Restart sabnzbdplus
+
+    - name: Ensure sabnzbdplus is started
+      ansible.builtin.service:
+        name: sabnzbdplus
+        state: started
+        enabled: true
+
+    - name: Transmission
+      block:
+        - name: Install dependencies
+          ansible.builtin.apt:
+            pkg:
+              - transmission-cli
+              - transmission-common
+              - transmission-daemon
+
+        - name: Update transmission-daemon user in init script
+          ansible.builtin.lineinfile:
+            path: /etc/init.d/transmission-daemon
+            regexp: '^USER='
+            line: 'USER={{ user }}'
+            backrefs: true
+          notify: Restart transmission
+
+        - name: Update transmission-daemon user in transmission-daemon.service
+          ansible.builtin.lineinfile:
+            path: /lib/systemd/system/transmission-daemon.service
+            regexp: '^User='
+            line: 'User={{ user }}'
+            backrefs: true
+          notify: Restart transmission
+
+        - name: Update transmission-daemon user in init script
+          ansible.builtin.lineinfile:
+            path: /etc/init/transmission-daemon.conf
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            backrefs: true
+          loop:
+            - regexp: ^setuid
+              line: "setuid {{ user }}"
+            - regexp: ^setgid
+              line: "setgid {{ user }}"
+          notify: Restart transmission
+
+        - name: Set ownership of transmission settings file
+          ansible.builtin.file:
+            path: /etc/transmission-daemon/settings.json
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: '0600'
+
+        - name: Set ownership of transmission directory
+          ansible.builtin.file:
+            path: "{{ item }}"
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: '0755'
+            state: directory
+            recurse: true
+          loop:
+            - /etc/transmission-daemon
+            - /var/lib/transmission-daemon
+
+        - name: Set ownership of transmission info directory
+          ansible.builtin.file:
+            path: /var/lib/transmission-daemon/info
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: '0755'
+            state: directory
+            recurse: true
+          notify: Restart transmission
+
+        - name: Add transmission-daemon user to downloader group
+          ansible.builtin.user:
+            name: debian-transmission
+            groups: downloader
+            append: true
+          notify: Restart transmission
+
+        - name: Edit settings.json
+          block:
+            - name: Stop transmission-daemon before config change
+              ansible.builtin.service:
+                name: transmission-daemon
+                state: stopped
+
+            - name: Update transmission RPC settings
+              ansible.builtin.replace:
+                path: /home/downloader/.config/transmission-daemon/settings.json
+                regexp: "{{ item.regexp }}"
+                replace: "{{ item.replace }}"
+              loop:
+                - regexp: '"rpc-whitelist": "127\.0\.0\.1,::1"'
+                  replace: '"rpc-whitelist": "127.0.0.1,::1,10.0.*.*"'
+                - regexp: '"rpc-host-whitelist": ""'
+                  replace: '"rpc-host-whitelist": "*.home"'
+              notify: Restart transmission
+
+        - name: Ensure transmission is started
+          ansible.builtin.service:
+            name: transmission-daemon
+            state: started
+            enabled: true
+
+  handlers:
+    - name: Restart sabnzbdplus
+      ansible.builtin.systemd:
+        name: sabnzbdplus
+        state: restarted
+
+    - name: Restart transmission
+      ansible.builtin.systemd:
+        name: transmission-daemon
+        state: restarted
+        daemon_reload: true

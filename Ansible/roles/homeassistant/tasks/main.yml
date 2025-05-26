@@ -1,0 +1,103 @@
+---
+# Ugh just use docker compose
+- name: Create group - {{ app_name }}
+  ansible.builtin.group:
+    name: "{{ app_name }}"
+    gid: 1111
+    state: present
+  register: app_group
+
+- name: Create user - {{ app_name }}
+  ansible.builtin.user:
+    name: "{{ app_name }}"
+    groups:
+      - "{{ app_group.name }}"
+    uid: 1111
+    group: "{{ app_name }}"
+    system: true
+    shell: /usr/sbin/nologin
+  register: app_user
+
+- name: Create config folder
+  ansible.builtin.file:
+    path: "/mnt/config/{{ app_name }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ app_name }}"
+    group: "{{ app_name }}"
+  register: config_dir
+
+- name: install commonly-named packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+  - python3
+  - python3-dev
+  - python3-pip
+  - gcc
+  - python3-virtualenv
+  - virtualenv
+  - ffmpeg
+  - software-properties-common
+  - python3-launchpadlib
+
+- name: debug
+  debug: 
+    msg: "{{ config_dir.path }}"
+
+- name: install debian-required pip packages
+  pip:
+    name: "{{ item }}"
+    state: present
+    virtualenv: "{{ config_dir.path }}/venv"
+    virtualenv_command: "python3.13 -m venv"
+  with_items:
+    - appdirs
+    - packaging
+    - python-dateutil
+    - josepy<2.0.0
+
+- name: install required python modules (pre-install)
+  pip:
+    name: "{{ item }}"
+    extra_args: "--upgrade"
+    virtualenv: "{{ config_dir.path }}/venv"
+    virtualenv_command: "python3.13 -m venv"
+  with_items:
+    - colorlog
+
+- name: install latest version of Home Assistant
+  pip:
+    name: homeassistant
+    extra_args: "--upgrade"
+    virtualenv: "{{ config_dir.path }}/venv"
+    virtualenv_command: "python3.13 -m venv"
+
+- name: install fedora systemd unit file
+  template:
+    src: home-assistant.service.j2
+    dest: "/etc/systemd/system/home-assistant.service"
+    owner: "{{ app_user.name }}"
+    group: "{{ app_user.group }}"
+    mode: 0644
+
+- name: Set recursive permissions
+  ansible.builtin.file:
+    path: "{{ config_dir.path }}"
+    state: directory
+    owner: "{{ app_user.name }}"
+    group: "{{ app_user.group }}"
+    mode: "u=rwX,g=rX,o=rX"
+    recurse: yes
+
+- name: start home assistant
+  systemd:
+    name: home-assistant
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+
+- name: Configure DNS and proxies
+  ansible.builtin.include_role:
+    name: proxy

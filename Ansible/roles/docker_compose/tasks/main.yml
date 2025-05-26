@@ -1,0 +1,62 @@
+---
+- name: Download docker GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /usr/share/keyrings/docker-keyring.asc
+    mode: '0644'
+
+- name: Add docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/docker-keyring.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Install apt dependencies
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400 # One day
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+
+# - name: Create PostgreSQL databases
+  # delegate_to: localhost
+  # community.postgresql.postgresql_db:
+  #   name: "{{ item.1 }}"
+  #   state: present
+  #   owner: "{{ item.0.name }}"
+  #   encoding: "{{ item.0.pg_encoding }}"
+  #   template: template0
+  #   login_host: db.home
+  #   login_user: cmeadows
+  #   login_password: "{{ password }}"
+  # loop: "{{ docker_apps | selectattr('pg_databases', 'defined') | subelements('pg_databases') }}"
+
+
+
+# - name: Create config folder
+#   ansible.builtin.file:
+#     path: "/mnt/config/{{ item.name }}"
+#     state: directory
+#     mode: '0750'
+#     owner: "{{ user }}"
+#     group: "{{ user }}"
+#   with_items: "{{ docker_apps }}"
+
+# - name: Create PostgreSQL user
+#   delegate_to: localhost
+#   community.postgresql.postgresql_user:
+#     name: "{{ item.name }}"
+#     password: "{{ password }}"
+#     login_host: db.home
+#     login_user: cmeadows
+#     login_password: "{{ password }}"
+#     db: postgres
+#   loop: "{{ docker_apps }}"
+#   when: item.pg_databases is defined
+
+
+
+

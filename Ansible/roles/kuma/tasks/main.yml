@@ -1,0 +1,21 @@
+---
+- name: Create {{ app_name }} folders
+  ansible.builtin.file:
+    path: /src/{{ app_name }}/data
+    state: directory
+    owner: 1111
+    group: 1111
+    mode: '0755'
+
+- name: Copy docker files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - src: "docker-compose.yml.j2"
+      dest: "/src/{{ app_name }}/docker-compose.yml"
+  notify: Restart {{ app_name }}
+
+- name: Create and start {{ app_name }}
+  community.docker.docker_compose_v2:
+    project_src: /src/{{ app_name }}

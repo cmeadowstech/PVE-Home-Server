@@ -1,5 +1,0 @@
----
-- name: Restart openvpnauto
-  ansible.builtin.service:
-    name: openvpnauto
-    state: restarted

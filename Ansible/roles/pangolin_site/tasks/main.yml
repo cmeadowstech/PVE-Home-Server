@@ -1,0 +1,56 @@
+---
+- name: Check if site exists
+  block:
+  - name: Get existing sites
+    uri:
+      url: https://api.meadows.page/v1/org/meadows/sites
+      method: GET
+      headers:
+        Authorization: "Bearer {{ PANGOLIN_API_KEY }}"
+      return_content: yes
+      status_code: 200
+    register: sites_response
+
+  - name: Check if hostname exists in sites
+    set_fact:
+      site_exists: "{{ sites_response.json.data.sites | selectattr('name', 'equalto', ansible_hostname) | list | length > 0 }}"
+
+- name: Create site and install newt
+  when: not site_exists
+  block:
+  - name: Generate random credentials once
+    set_fact:
+      NEWT_ID: "{{ newtId }}"
+      NEWT_SECRET: "{{ newtSecret }}"
+
+  - name: Create Pangolin site
+    uri:
+      url: https://api.meadows.page/v1/org/meadows/site
+      method: PUT
+      headers:
+        authorization: "Bearer {{ PANGOLIN_API_KEY }}"
+      body_format: json
+      body:
+        name: "{{ ansible_hostname }}"
+        type: "newt"
+        newtId: "{{ NEWT_ID }}"
+        secret: "{{ NEWT_SECRET }}"
+        exitNodeId: 1
+        subnet: "100.89.128.4/30"
+      status_code: 200,201,202
+      return_content: false
+
+  - name: Download Newt binary
+    get_url:
+      url: "https://github.com/fosrl/newt/releases/latest/download/newt_linux_amd64"
+      dest: "/usr/local/bin/newt"
+      mode: '0755'
+      owner: root
+      group: root
+
+  - name: Create Newt systemd service file
+    template:
+      src: newt.service.j2
+      dest: /lib/systemd/system/newt.service
+      mode: '0644'
+  notify: Restart newt

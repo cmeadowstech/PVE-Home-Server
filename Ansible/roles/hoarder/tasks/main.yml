@@ -1,51 +1,24 @@
 ---
-- name: Set app variables
-  set_fact:
-    app_name: "hoarder"
-    port: "3000"
-
-- name: Create app folders
+- name: Create {{ app_name }} folders
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: /src/{{ app_name }}
     state: directory
-  with_items:
-  - /src/{{ app_name }}
 
 - name: Copy docker files
   ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
   with_items:
-    - src: "{{ app_name }}_docker-compose.yml.j2"
+    - src: "docker-compose.yml.j2"
       dest: "/src/{{ app_name }}/docker-compose.yml"
     - src: ".env.j2"
       dest: "/src/{{ app_name }}/.env"
+  notify: Restart {{ app_name }}
 
 - name: Create and start {{ app_name }}
   community.docker.docker_compose_v2:
     project_src: /src/{{ app_name }}
 
-- name: Check if the {{ app_name }}.local resolves
-  getent:
-    database: hosts
-    key: "{{ app_name }}.local"
-  register: hostname_check
-  ignore_errors: yes
-
-- name: Run script to add {{ app_name }}.local to technitium
-  script: technitium_script.sh -h {{ app_name }} -i {{ ansible_ens18.ipv4.address }}
-  when: hostname_check.failed
-  environment:
-    TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
-
-- name: Configure reverse proxy
-  delegate_to: vps
-  block:
-    - name: Check if app exists
-      ansible.builtin.command: dokku apps:report {{ app_name }}
-      register: dokku_status
-      ignore_errors: yes
-
-    - name: Run script to add {{ app_name }}.local to technitium
-      script: dokku_script.sh -h {{ app_name }} -i {{ ansible_tailscale0.ipv4.address }} -p {{ port }}
-      when: dokku_status.failed
+- name: Configure DNS and proxies
+  ansible.builtin.include_role:
+    name: proxy

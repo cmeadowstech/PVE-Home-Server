@@ -1,2 +1,3 @@
 ---
-# vars file for paperless
+app_name: "changedetection"
+port: "5000"

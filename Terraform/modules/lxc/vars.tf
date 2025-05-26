@@ -31,11 +31,49 @@ variable "memory" {
 variable "unprivileged" {
   description = "If the LXC is privileged or not"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "nesting" {
   description = "Enable nesting?"
   type        = bool
   default     = false
+}
+
+variable "storage_size" {
+  description = "How much storage to give the LXC"
+  type        = string
+  default     = "8G"
+}
+
+variable "gateway" {
+  description = "IPv4 gateway address"
+  type        = string
+  default     = ""
+}
+
+variable "ipv4" {
+  description = "Static IPv4 address"
+  type        = string
+  default     = "dhcp"
+}
+
+variable "ostemplate" {
+  description = "Template for LXC"
+  type        = string
+  default     = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
+}
+
+# modules/mountpoints/variables.tf
+variable "mountpoints" {
+  description = "List of mountpoint configurations"
+  type = list(object({
+    key     = string
+    slot    = number
+    storage = string
+    volume  = string
+    mp      = string
+    size    = string
+  }))
+  default = []
 }

@@ -1,0 +1,153 @@
+---
+- name: Configure PVE Server
+  hosts: pve_server
+  vars:
+    nvidia_driver: server
+  roles:
+    - update
+  tasks:
+    - name: Setup Netdata
+      block:
+        - name: Install netdata
+          ansible.builtin.apt:
+            pkg:
+              - netdata
+
+        - name: Configure netdata settings
+          ansible.builtin.replace:
+            path: "/etc/netdata/netdata.conf"
+            regexp: "{{ item.reg }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - reg: '(bind socket).*$'
+              replace: "bind socket to IP = {{ ansible_vmbr0.ipv4.address }}"
+          notify:
+            - Restart netdata
+
+    - name: Configure Proxmox repositories
+      block:
+        - name: Remove enterprise repository
+          ansible.builtin.apt_repository:
+            repo: "deb https://enterprise.proxmox.com/debian/pve bookworm pve-enterprise"
+            state: absent
+            filename: pve-enterprise
+
+        - name: Add community repository
+          ansible.builtin.apt_repository:
+            repo: "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription"
+            state: present
+            filename: pve-community
+
+    # https://mclarendatasystems.com/remove-proxmox51-subscription-notice/
+    - name: Remove Proxmox subscription notice
+      block:
+        - name: Check if subscription notice has already been removed
+          ansible.builtin.shell: |
+            grep -A2 "checked_command: function(orig_cmd)" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js | grep -q "return;"
+          register: check_notice
+          changed_when: false
+          failed_when: false
+
+        - name: Modify proxmoxlib.js to remove subscription notice
+          ansible.builtin.replace:
+            path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+            regexp: 'checked_command: function\(orig_cmd\) \{'
+            replace: 'checked_command: function(orig_cmd) {\n   orig_cmd();\n   return;'
+          when: check_notice.rc != 0
+
+        - name: Restart pveproxy service
+          ansible.builtin.systemd:
+            name: pveproxy
+            state: restarted
+          when: check_notice.rc != 0
+
+    - name: Enable and start fstrim timer
+      ansible.builtin.systemd:
+        name: fstrim.timer
+        state: started
+        enabled: true
+
+    - name: Driver defaults
+      block:
+        - name: Update GRUB defaults
+          ansible.builtin.lineinfile:
+            path: /etc/default/grub
+            regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+            line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet consoleblank=0 console=tty0 nvidia-drm.modeset=1 intel_iommu=on iommu=pt nouveau.modeset=0 i915.enable_gvt=1"'
+            backup: true
+          notify:
+            - Update grub
+            - Reboot system
+
+        - name: Add LXC configuration entries
+          ansible.builtin.lineinfile:
+            path: "/etc/modules"
+            line: "{{ item }}"
+            state: present
+          with_items:
+            - uinput
+            - "# Modules required for PCI passthrough"
+            - vfio
+            - vfio_iommu_type1
+            - vfio_pci
+            - vfio_virqfd
+            - "# Modules required for Intel GVT"
+            - kvmgt
+            - exngt
+            - Vfio-mdev
+          register: module_changes
+          notify:
+            - Update initramfs
+
+        - name: Check kernel version
+          ansible.builtin.shell: |
+            uname -r
+          register: kernel_version
+          changed_when: false
+          failed_when: false
+
+        - name: Install dependencies
+          ansible.builtin.apt:
+            update_cache: true
+            pkg:
+              - "pve-headers-{{kernel_version.stdout}}"
+              - make
+              - gcc
+              - libvulkan1
+              - pkg-config
+              - intel-opencl-icd
+              - dkms
+              - libc6-dev
+
+    - name: Run Nvidia role
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      with_items:
+        - nvidia
+
+    - name: Configure Intel
+      block:
+        - name: Install dependencies
+          ansible.builtin.apt:
+            pkg: intel-gpu-tools
+
+        - name: Configure Intel GuC and HuC for i915 driver
+          ansible.builtin.copy:
+            dest: /etc/modprobe.d/i915.conf
+            content: "options i915 enable_guc=3"
+            mode: '0644'
+
+  handlers:
+    - name: Update grub
+      ansible.builtin.command: update-grub
+
+    - name: Update initramfs
+      ansible.builtin.command: update-initramfs -u
+
+    - name: Reboot system
+      ansible.builtin.reboot:
+
+    - name: Restart netdata
+      ansible.builtin.service:
+        name: netdata
+        state: restarted

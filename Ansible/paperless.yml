@@ -1,0 +1,7 @@
+---
+- name: Preconfigure paperless
+  hosts: paperless.home
+  roles:
+    - update
+    - docker_compose
+    - paperless

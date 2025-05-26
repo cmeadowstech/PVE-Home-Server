@@ -1,0 +1,6 @@
+---
+- name: Restart caddy
+  delegate_to: firewall
+  ansible.builtin.service:
+    name: caddy
+    state: restarted

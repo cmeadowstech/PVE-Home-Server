@@ -1,0 +1,40 @@
+---
+- name: Install dotnet dependencies
+  ansible.builtin.apt:
+    name:
+      - libc6-dev
+    state: present
+
+- name: Check if dotnet is already installed
+  ansible.builtin.stat:
+    path: /usr/bin/dotnet
+  register: service_check
+
+- name: Install dotnet block
+  when: not service_check.stat.exists
+  block:
+    - name: Download dotnet GPG key
+      ansible.builtin.get_url:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        dest: /usr/share/keyrings/microsoft-prod.asc
+        mode: '0644'
+        force: false
+        timeout: 60
+      register: gpg_key_download
+      until: gpg_key_download is success
+      retries: 3
+      delay: 5
+
+    - name: Add dotnet repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.asc] https://packages.microsoft.com/debian/{{ ansible_distribution_major_version }}/prod {{ ansible_distribution_release }} main"
+        state: present
+        filename: microsoft-prod
+        update_cache: true
+
+    - name: Install dotnet SDK
+      ansible.builtin.apt:
+        name:
+          - dotnet-sdk-8.0
+        state: present
+        update_cache: true

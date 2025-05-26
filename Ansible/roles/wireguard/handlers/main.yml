@@ -1,0 +1,12 @@
+---
+- name: Restart networking
+  ansible.builtin.systemd:
+    name: networking
+    state: restarted
+    enabled: true
+
+- name: Restart wireguard
+  ansible.builtin.systemd:
+    name: wg-quick@{{ wg_conf_file }}
+    state: restarted
+    enabled: true

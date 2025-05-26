@@ -1,0 +1,12 @@
+[Interface]
+# Device: Gifted Mouse
+PrivateKey = {{ MULLVAD_PRIVATE_KEY }}
+Address = 10.67.212.236/32,fc00:bbbb:bbbb:bb01::4:d4eb/128
+DNS = 10.0.11.2
+PostUp = iptables -I OUTPUT ! -o %i -m mark ! --mark $(wg show %i fwmark) -m addrtype ! --dst-type LOCAL ! -d 10.0.0.0/8 -j REJECT && ip6tables -I OUTPUT ! -o %i -m mark ! --mark $(wg show %i fwmark) -m addrtype ! --dst-type LOCAL -j REJECT
+PreDown = iptables -D OUTPUT ! -o %i -m mark ! --mark $(wg show %i fwmark) -m addrtype ! --dst-type LOCAL ! -d 10.0.0.0/8 -j REJECT && ip6tables -D OUTPUT ! -o %i -m mark ! --mark $(wg show %i fwmark) -m addrtype ! --dst-type LOCAL -j REJECT
+
+[Peer]
+PublicKey = {{ MULLVAD_PUBLIC_KEY }}
+AllowedIPs = 0.0.0.0/0,::0/0
+Endpoint = 45.134.140.143:51820

@@ -1,2 +1,3 @@
 ---
-# vars file for hoarder
+app_name: hoarder
+port: 3000

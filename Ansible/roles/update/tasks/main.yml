@@ -5,10 +5,60 @@
     update_cache: true
     cache_valid_time: 86400 # One day
 
+- name: Update and upgrade apt
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400 # One day
+    pkg:
+      - bat
+      - curl
+      - micro
+      - gpg
+      - gnupg
+      - unzip
+      - git
+      - btop
+
 - name: Fix ssh slowness # https://gist.github.com/charlyie/76ff7d288165c7d42e5ef7d304245916?permalink_comment_id=4897155#gistcomment-4897155
   ansible.builtin.lineinfile:
     path: /etc/pam.d/common-session
     regexp: '^session\s+optional\s+pam_systemd\.so'
     line: '#session optional pam_systemd.so'
     state: present
-    backrefs: yes
+    backrefs: true
+
+- name: Import fish tasks
+  import_tasks: fish.yml
+
+- name: Set local
+  block:
+    - name: Ensure UTF-8 locale is available
+      ansible.builtin.locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: Set locale environment variables
+      ansible.builtin.lineinfile:
+        path: /etc/default/locale
+        line: "{{ item }}"
+        create: true
+      loop:
+        - 'LANG="en_US.UTF-8"'
+        - 'LC_ALL="en_US.UTF-8"'
+        - 'LANGUAGE="en_US:en"'
+
+# - name: Set facts for var dummy placeholder
+#   block:
+#     - name: Get Proxmox LXC container ID
+#       ansible.builtin.shell: awk -F'vm--' '/pve-vm--/{print $2}' /proc/self/mountinfo | cut -d'-' -f1
+#       register: container_id
+
+#     - name: "Add vars to dummy host"
+#       add_host:
+#         name: "vars"
+#         container_id_fact: "{{ container_id.stdout }}"
+#         host: "{{ ansible_hostname | default([]) }}"
+#         host_fqdn: "{{ inventory_hostname }}"
+#         apps: "{{ apps | default([]) }}"
+#         app: "{{ app | default([]) }}"
+#         port: "{{ port | default([]) }}"

@@ -1,0 +1,13 @@
+---
+- name: OPNSense configuration
+  hosts: firewall
+  gather_facts: true
+  tasks:
+    - name: Display specific facts
+      ansible.builtin.debug:
+        msg:
+          - "Hostname: {{ ansible_hostname }}"
+          - "IP Address: {{ ansible_default_ipv4.address }}"
+          - "Distribution: {{ ansible_distribution }}"
+          - "Distribution Version: {{ ansible_distribution_version }}"
+          - "All IPv4 Addresses: {{ ansible_all_ipv4_addresses }}"

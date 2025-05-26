@@ -1,0 +1,16 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:nightly2-rootless
+    container_name: kuma
+    volumes:
+      - ./data:/app/data
+    ports:
+      - 3001:3001
+    restart: unless-stopped
+    user: 1111:1111
+
+networks:
+  default:
+    driver: bridge
+    name: pangolin
+    external: true

@@ -1,0 +1,49 @@
+---
+- name: Preconfigure Jellyfin server
+  hosts: video.home
+  vars:
+    user: jellyfin
+    crowdsec_collection: LePresidente/jellyfin
+  roles:
+    - update
+    - dotnet
+    - crowdsec
+
+- name: Update LXC .conf
+  ansible.builtin.import_playbook: lxc_conf.yml
+  vars:
+    id: "{{ hostvars.vars.container_id_fact }}"
+    lxc_config:
+      - "lxc.cgroup2.devices.allow: a"
+      - "lxc.cap.drop: "
+      - "lxc.mount.entry: /dev/net dev/net none bind,create=dir"
+      - "lxc.mount.entry: /dev/nvidia0 dev/nvidia0 none bind,optional,create=file"
+      - "lxc.mount.entry: /dev/nvidiactl dev/nvidiactl none bind,optional,create=file"
+      - "lxc.mount.entry: /dev/nvidia-modeset dev/nvidia-modeset none bind,optional,create=file"
+      - "lxc.mount.entry: /dev/nvidia-uvm dev/nvidia-uvm none bind,optional,create=file"
+      - "lxc.mount.entry: /dev/nvidia-uvm-tools dev/nvidia-uvm-tools none bind,optional,create=file"
+      - "dev0: /dev/dri/renderD128,gid=104"
+      - "dev1: /dev/dri/renderD129,gid=104"
+      - "mp0: /storage/streaming,mp=/mnt/media"
+
+- name: Setup Jellyfin server
+  hosts: video.home
+  vars:
+    user: jellyfin
+    nvidia_driver: client
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - intel-opencl-icd
+
+    - name: Run Nvidia role
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      with_items:
+        - nvidia
+
+    
+    # Fileflows
+    

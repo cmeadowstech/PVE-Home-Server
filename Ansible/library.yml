@@ -1,0 +1,10 @@
+---
+- name: Set up Library
+  hosts: library.home
+  roles:
+    - update
+    - docker_compose
+    - audiobookshelf
+    - calibre-web-automated
+  vars:
+    public: true

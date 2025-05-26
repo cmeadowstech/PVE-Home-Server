@@ -1,0 +1,116 @@
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+    geoblock:
+      plugin:
+        geoblock:
+          silentStartUp: false
+          allowLocalRequests: true
+          logLocalRequests: false # change to true to see logs and verify if it is working
+          logAllowedRequests: false # change to true to see logs and verify if it is working
+          logApiRequests: false # change to true to see logs and verify if it is working
+          api: "https://get.geojs.io/v1/ip/country/{ip}"
+          apiTimeoutMs: 500
+          cacheSize: 25
+          forceMonthlyUpdate: true
+          allowUnknownCountries: false
+          unknownCountryApiResponse: "nil"
+          blackListMode: false
+          countries:
+            - US
+    fail2ban:
+      plugin:
+        fail2ban:
+          allowlist:
+            ip: ::1,127.0.0.1
+          denylist:
+            ip: 192.168.0.0/24
+          rules:
+            bantime: 3h
+            enabled: "true"
+            findtime: 10m
+            maxretry: "4"
+            statuscode: 400,401,403-499
+    crowdsec:
+      plugin:
+        bouncer:
+          CrowdsecLapiKey: {{ lapi_key }}
+          CrowdsecLapiUrl: "http://crowdsec:8080"
+          Enabled: "true"
+          UpdateIntervalSeconds: 60
+          DefaultDecisionTimeout: 60
+
+  routers:
+    # HTTP to HTTPS redirect router
+    main-app-router-redirect:
+      rule: "Host(`pangolin.meadows.page`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: next-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    # Next.js router (handles everything except API and WebSocket paths)
+    next-router:
+      rule: "Host(`pangolin.meadows.page`) && !PathPrefix(`/api/v1`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: next-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "meadows.page"
+            sans:
+              - "*.meadows.page"
+
+    # API router (handles /api/v1 paths)
+    api-router:
+      rule: "Host(`pangolin.meadows.page`) && PathPrefix(`/api/v1`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # WebSocket router
+    ws-router:
+      rule: "Host(`pangolin.meadows.page`)" # REPLACE THIS WITH YOUR DOMAIN
+      service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    int-api-router-redirect:
+      rule: "Host(`api.meadows.page`)"
+      service: int-api-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    int-api-router:
+      rule: "Host(`api.meadows.page`)"
+      service: int-api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    next-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3002" # Next.js server
+
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3000" # API/WebSocket server
+
+    int-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3003" # Integration API

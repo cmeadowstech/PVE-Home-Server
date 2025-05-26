@@ -1,0 +1,7 @@
+---
+- name: Set up Pangolin
+  hosts: vps
+  roles:
+    - update
+    - docker_compose
+    - pangolin

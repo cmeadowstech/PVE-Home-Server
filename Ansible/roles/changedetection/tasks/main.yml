@@ -1,39 +1,24 @@
 ---
-- name: Set app variables
-  set_fact:
-    app_name: "changedetection"
-    port: "5000"
+- name: Create app folders
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+  - /src/{{ app_name }}
 
-- name: Configure {{ app_name }}
-  block:
-    - name: Create app folders
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-      with_items:
-      - /src/{{ app_name }}
+- name: Copy docker files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - src: "docker-compose.yml.j2"
+      dest: "/src/{{ app_name }}/docker-compose.yml"
+  notify: Restart {{ app_name }}
 
-    - name: Copy docker files
-      ansible.builtin.template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-      with_items:
-        - src: "{{ app_name }}_docker-compose.yml.j2"
-          dest: "/src/{{ app_name }}/docker-compose.yml"
+- name: Create and start {{ app_name }}
+  community.docker.docker_compose_v2:
+    project_src: /src/{{ app_name }}
 
-    - name: Create and start {{ app_name }}
-      community.docker.docker_compose_v2:
-        project_src: /src/{{ app_name }}
-
-    - name: Check if the {{ app_name }}.local resolves
-      getent:
-        database: hosts
-        key: "{{ app_name }}.local"
-      register: hostname_check
-      ignore_errors: yes
-
-    - name: Run script to add {{ app_name }}.local to technitium
-      script: technitium_script.sh -h {{ app_name }} -i {{ ansible_ens18.ipv4.address }}
-      when: hostname_check.failed
-      environment:
-        TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
+- name: Configure DNS and proxies
+  ansible.builtin.include_role:
+    name: proxy

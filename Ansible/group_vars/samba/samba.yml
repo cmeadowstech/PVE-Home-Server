@@ -1,16 +1,4 @@
 ---
 shares:
-    - name: pve-share
-      mount: /mnt/pve-share
-
-    - name: jellyfin
-      mount: /mnt/pve-share/Plex
-
-    - name: vscode-server
-      mount: /mnt/pve-share/Git
-
-    - name: root
-      mount: /mnt/pve-share
-
-    - name: debian-transmission
-      mount: /mnt/pve-share/Transmission
+    - name: nas
+      mount: /mnt/storage

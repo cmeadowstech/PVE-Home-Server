@@ -1,0 +1,10 @@
+---
+- name: Setup pod.home
+  hosts: pod.home
+  vars:
+    public: true
+    # user: pod
+  roles:
+    - update
+    - docker_compose
+    - hoarder

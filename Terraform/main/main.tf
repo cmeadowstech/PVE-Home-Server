@@ -2,103 +2,251 @@ terraform {
   required_providers {
     proxmox = {
       source  = "Telmate/proxmox"
-      version = "2.9.14"
+      version = "3.0.1-rc4"
     }
   }
 }
 
 provider "proxmox" {
-  pm_api_url = "https://10.0.1.1:8006/api2/json"
+  pm_api_url      = "https://10.0.10.2:8006/api2/json"
+  pm_tls_insecure = true
+  pm_user         = var.PM_USER
+  pm_password     = var.PM_PASS
+  # pm_debug            = true
 }
 
 module "technitium" {
   source = "../modules/lxc"
 
-  hostname     = "technitium"
+  hostname     = "dns"
   cores        = 2
-  memory       = 512
-  password     = var.password
-  unprivileged = true
-}
-
-module "pihole" {
-  source = "../modules/lxc"
-
-  hostname     = "pihole"
-  cores        = 2
-  memory       = 512
-  password     = var.password
-  unprivileged = true
-}
-
-module "samba" {
-  source = "../modules/lxc"
-
-  hostname     = "samba"
-  cores        = 1
   memory       = 2048
   password     = var.password
   unprivileged = false
+  storage_size = "8G"
+  ipv4         = "10.0.11.2/24"
+  gateway      = "10.0.11.1"
 }
 
-module "vscode-server" {
-  source = "../modules/lxc"
+module "video" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
-  hostname     = "vscode-server"
-  cores        = 4
+  hostname     = "video"
+  cores        = 6
   memory       = 8192
   password     = var.password
-  unprivileged = false
+  storage_size = "100G"
 }
 
-module "jellyfin" {
-  source = "../modules/lxc"
+module "download" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
-  hostname     = "jellyfin"
-  cores        = 4
+  hostname     = "download"
+  cores        = 2
+  memory       = 4096
+  password     = var.password
+  storage_size = "100G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/Downloads"
+      volume  = "/storage/Downloads"
+      mp      = "/mnt/downloads"
+      size    = "11T"
+    }
+  ]
+}
+
+# module "monitor" {
+#   depends_on = [module.technitium]
+#   source     = "../modules/lxc"
+
+#   hostname     = "monitor"
+#   cores        = 4
+#   memory       = 4090
+#   password     = var.password
+#   storage_size = "25G"
+# }
+
+module "db" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "db"
+  cores        = 2
+  memory       = 4096
+  password     = var.password
+  storage_size = "25G"
+}
+
+module "storage" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "storage"
+  cores        = 1
   memory       = 2048
   password     = var.password
+  storage_size = "8G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage"
+      volume  = "/storage"
+      mp      = "/mnt/storage"
+      size    = "11T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/backup"
+      volume  = "/backup"
+      mp      = "/mnt/backup"
+      size    = "3300G"
+    }
+  ]
+}
+
+module "pod" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "pod"
+  cores        = 10
+  memory       = 24576
+  password     = var.password
+  storage_size = "200G"
   unprivileged = false
+  nesting      = true
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/streaming"
+      volume  = "/storage/streaming"
+      mp      = "/mnt/media"
+      size    = "11T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "11T"
+    },
+    {
+      key     = "2"
+      slot    = 2
+      storage = "/storage/Downloads"
+      volume  = "/storage/Downloads"
+      mp      = "/mnt/downloads"
+      size    = "11T"
+    }
+  ]
 }
 
-module "postgres" {
-  source = "../modules/lxc"
+module "paperless" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
-  hostname     = "postgres"
-  cores        = 1
-  memory       = 1024
+  hostname     = "paperless"
+  cores        = 2
+  memory       = 2048
   password     = var.password
-  unprivileged = true
-}
-
-module "redis" {
-  source = "../modules/lxc"
-
-  hostname     = "redis"
-  cores        = 1
-  memory       = 1024
-  password     = var.password
+  storage_size = "16G"
   unprivileged = false
+  nesting      = true
 }
 
-module "flame" {
-  source = "../modules/lxc"
+module "code" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
-  hostname     = "flame"
-  cores        = 1
-  memory       = 1024
+  hostname     = "code"
+  cores        = 8
+  memory       = 16384
   password     = var.password
-  unprivileged = true
+  storage_size = "100G"
 }
 
-module "grafana" {
-  source = "../modules/lxc"
+module "homeassistant" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
 
-  hostname     = "grafana"
-  cores        = 1
-  memory       = 1024
+  hostname     = "homeassistant"
+  cores        = 2
+  memory       = 4096
   password     = var.password
-  unprivileged = true
+  storage_size = "32G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "32G"
+    }
+  ]
 }
 
-# Don't use 10.0.0.208 - set manually for transmission
+module "library" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "library"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  storage_size = "16G"
+
+  unprivileged = false
+  nesting      = true
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "1T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/storage/Media/Books"
+      volume  = "/storage/Media/Books"
+      mp      = "/mnt/Books"
+      size    = "1T"
+    },
+    {
+      key     = "2"
+      slot    = 2
+      storage = "/storage/Media/cwa-book-ingest"
+      volume  = "/storage/Media/cwa-book-ingest"
+      mp      = "/mnt/cwa-book-ingest"
+      size    = "1T"
+    }
+  ]
+}
+
+module "newt" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "newt"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  storage_size = "8G"
+}

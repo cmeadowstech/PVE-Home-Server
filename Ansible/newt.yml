@@ -1,0 +1,6 @@
+---
+- name: Set up Library
+  hosts: newt.home
+  roles:
+    - update
+    - pangolin_site

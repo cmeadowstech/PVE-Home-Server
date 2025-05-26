@@ -1,0 +1,79 @@
+---
+- name: Setup Postgres instance
+  hosts: db.home
+  vars:
+    user: city_ai
+  gather_facts: false
+  roles:
+    - update
+  tasks:
+    - name: Configure postgres database
+      block:
+        - name: Create PostgreSQL user
+          community.postgresql.postgresql_user:
+            name: "{{ user }}"
+            password: "{{ password }}"
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+            db: postgres
+
+        - name: Create PostgreSQL database
+          community.postgresql.postgresql_db:
+            name: city_events
+            state: present
+            owner: "{{ user }}"
+            encoding: UTF-8
+            template: template0
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+          register: db_creation
+
+        - name: Create events table in PostgreSQL
+          community.postgresql.postgresql_table:
+            db: "{{ db_creation.db }}"
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+            name: events
+            columns:
+              - id SERIAL PRIMARY KEY
+              - title VARCHAR(255) NOT NULL
+              - event_date date[] USING string_to_array(event_date, ',')::date[] NOT NULL
+              - summary TEXT
+              - url VARCHAR(255)
+              - tags varchar[] USING tags::varchar[]
+              - markdown TEXT
+              - hash VARCHAR(32)
+              - city VARCHAR(100)
+              - state CHAR(2)
+              - created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+              - updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            state: present
+          
+        - name: Grant INSERT privileges on events table
+          community.postgresql.postgresql_privs:
+            database: city_events
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+            schema: public
+            privs: SELECT,INSERT,UPDATE
+            type: table
+            objs: events
+            role: "{{ user }}"
+            state: present
+
+        - name: Grant USAGE on events_id_seq sequence
+          community.postgresql.postgresql_privs:
+            database: city_events
+            login_host: db.home
+            login_user: cmeadows
+            login_password: "{{ password }}"
+            privs: USAGE
+            type: sequence
+            obj: events_id_seq
+            role: "{{ user }}"
+            state: present
+

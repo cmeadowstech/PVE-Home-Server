@@ -1,0 +1,83 @@
+---
+- name: Preconfigure vps
+  hosts: vps
+  vars:
+    ip: "173.255.230.134"
+    app: vps
+    wg_conf_file: vps_wg
+  roles:
+    - update
+    - docker_compose
+    - kuma
+  tasks:
+    - name: Add A record to Technitium DNS
+      delegate_to: localhost
+      uri:
+        url: "http://10.0.11.2:5380/api/zones/records/add?token={{ TECHNITIUM_API_TOKEN }}&zone=home&domain={{ inventory_hostname }}.home&type=A&overwrite=true&ipAddress={{ ip }}&ptr=false&createPtrZone=false&updateSvcbHints=false"
+        method: GET
+        return_content: true
+        validate_certs: false
+      register: dns_result
+      failed_when: dns_result.status != 200
+
+    - name: Create group - {{ app }}
+      ansible.builtin.group:
+        name: "{{ app }}"
+        gid: 1111
+        state: present
+      register: app_group
+
+    - name: Create user - {{ app }}
+      ansible.builtin.user:
+        name: "{{ app }}"
+        groups:
+          - "{{ app_group.name }}"
+        uid: 1111
+        group: "{{ app }}"
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+      register: app_user
+
+    - name: Create app folder
+      ansible.builtin.file:
+        path: "/src/{{ app }}"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+        recurse: yes
+      register: app_folder
+
+    - name: Copy files
+      ansible.builtin.copy:
+        src: "{{ app }}_docker-compose.yml"
+        dest: "{{ app_folder.path }}/docker-compose.yml"
+        mode: '0640'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+      loop:
+        - src: "{{ app }}_docker-compose.yml"
+          dest: "{{ app_folder.path }}/docker-compose.yml"
+
+    - name: Copy .env file
+      ansible.builtin.template:
+        src: "pocketid.env.j2"
+        dest: "{{ app_folder.path }}/pocketid.env"
+        mode: '0644'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Create data folder
+      ansible.builtin.file:
+        path: "{{ app_folder.path }}/data"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_user.name }}"
+        group: "{{ app_user.group }}"
+
+    - name: Create and start from docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_folder.path }}"
+        remove_orphans: true
+      register: compose_output

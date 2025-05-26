@@ -76,8 +76,8 @@ pages:
             cache: 3h
             style: detailed-list
             feeds:
-              - url: http://rsshub.local:1200/cltcomedyzone/events
-              - url: http://vscode-server.local:1200/blumenthalarts/events
+              - url: http://rsshub.home:1200/cltcomedyzone/events
+              - url: http://vscode-server.home:1200/blumenthalarts/events
 
       - size: full
         widgets:
@@ -86,5 +86,5 @@ pages:
             collapse-after: 3
             cache: 3h
             feeds:
-              - url: http://rsshub.local:1200/cltcomedyzone/events
-              - url: http://vscode-server.local:1200/blumenthalarts/events
+              - url: http://rsshub.home:1200/cltcomedyzone/events
+              - url: http://vscode-server.home:1200/blumenthalarts/events

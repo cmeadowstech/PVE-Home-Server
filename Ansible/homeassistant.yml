@@ -1,0 +1,6 @@
+---
+- name: Setup home assistant
+  hosts: homeassistant.home
+  roles:
+    - update
+    - homeassistant

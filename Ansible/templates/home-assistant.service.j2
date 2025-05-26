@@ -1,0 +1,11 @@
+[Unit]
+Description=Home Assistant
+After=network.target
+
+[Service]
+Type=simple
+User={{ user }}
+ExecStart={{ config_dir.path }}/venv/bin/hass --config {{ config_dir.path }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,41 @@
+---
+- name: Check if CrowdSec is installed
+  ansible.builtin.command: which cscli
+  register: cscli_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Install and register Crowdsec
+  when: cscli_check.rc != 0
+  block:
+    - name: Install CrowdSec via official script
+      ansible.builtin.shell: curl -s https://install.crowdsec.net | sh
+      args:
+        creates: /etc/apt/sources.list.d/crowdsec_crowdsec.list
+
+    - name: Install crowdsec
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - crowdsec
+
+    - name: Register remote LAPI server
+      ansible.builtin.shell: cscli lapi register -u http://10.0.11.1:8080
+
+- name: Deploy CrowdSec configuration
+  ansible.builtin.copy:
+    src: config.yaml
+    dest: /etc/crowdsec/config.yaml
+  notify: Restart crowdsec
+
+- name: Install Jellyfin CrowdSec collection
+  ansible.builtin.command: "cscli collections install {{ crowdsec_collection }}"
+  when: crowdsec_collection is defined
+  changed_when: "'successfully installed' in command_result.stdout"
+  register: command_result
+
+- name: Ensure crowdsec is started
+  ansible.builtin.systemd:
+    name: "crowdsec"
+    state: started
+    enabled: true

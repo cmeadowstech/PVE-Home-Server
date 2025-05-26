@@ -1,3 +1,6 @@
+# WG configs
+*wg*.conf.j2
+
 # Local .terraform directories
 **/.terraform/*
 
