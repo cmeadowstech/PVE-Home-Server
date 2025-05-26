@@ -3,39 +3,6 @@
   hosts: pod.home
   roles:
     - update
+    - hoarder
   vars:
-    app: hoarder
-    port: 3000
-  tasks:
-    - name: Create app folders
-      ansible.builtin.file:
-        path: /src/{{ app }}
-        state: directory
-
-    - name: Copy docker files
-      ansible.builtin.template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-      with_items:
-        - src: "{{ app }}_docker-compose.yml.j2"
-          dest: "/src/{{ app }}/docker-compose.yml"
-        - src: "{{ app }}.env.j2"
-          dest: "/src/{{ app }}/.env"
-
-    - name: Create and start {{ app }}
-      community.docker.docker_compose_v2:
-        project_src: /src/{{ app }}
-
-    - name: Add {{ app }} to technitium
-      ansible.builtin.script: technitium_script.sh -h {{ app }} -d firewall.home
-      environment:
-        TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
-      delegate_to: localhost
-
-- name: Update Caddy
-  ansible.builtin.import_playbook: caddy.yml
-  vars:
-    apps:
-      - hostname: "{{ hostvars.vars.app }}.home"
-        upstream_host: "{{ hostvars.vars.host_fqdn }}"
-        port: "{{ hostvars.vars.port }}"
+    public: true

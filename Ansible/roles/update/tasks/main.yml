@@ -47,18 +47,18 @@
         - 'LC_ALL="en_US.UTF-8"'
         - 'LANGUAGE="en_US:en"'
 
-- name: Set facts for var dummy placeholder
-  block:
-    - name: Get Proxmox LXC container ID
-      ansible.builtin.shell: awk -F'vm--' '/pve-vm--/{print $2}' /proc/self/mountinfo | cut -d'-' -f1
-      register: container_id
+# - name: Set facts for var dummy placeholder
+#   block:
+#     - name: Get Proxmox LXC container ID
+#       ansible.builtin.shell: awk -F'vm--' '/pve-vm--/{print $2}' /proc/self/mountinfo | cut -d'-' -f1
+#       register: container_id
 
-    - name: "Add vars to dummy host"
-      add_host:
-        name: "vars"
-        container_id_fact: "{{ container_id.stdout }}"
-        host: "{{ ansible_hostname | default([]) }}"
-        host_fqdn: "{{ inventory_hostname }}"
-        apps: "{{ apps | default([]) }}"
-        app: "{{ app | default([]) }}"
-        port: "{{ port | default([]) }}"
+#     - name: "Add vars to dummy host"
+#       add_host:
+#         name: "vars"
+#         container_id_fact: "{{ container_id.stdout }}"
+#         host: "{{ ansible_hostname | default([]) }}"
+#         host_fqdn: "{{ inventory_hostname }}"
+#         apps: "{{ apps | default([]) }}"
+#         app: "{{ app | default([]) }}"
+#         port: "{{ port | default([]) }}"

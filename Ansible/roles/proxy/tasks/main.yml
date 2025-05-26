@@ -1,0 +1,68 @@
+---
+- name: Add app cname record
+  uri:
+    url: "http://10.0.11.2:5380/api/zones/records/add?token={{ TECHNITIUM_API_TOKEN }}&zone=home&domain=hoarder.home&type=CNAME&ttl=&overwrite=true&expiryTtl=&cname=firewall.home"
+    method: GET
+    return_content: true
+    validate_certs: false
+  register: dns_result
+  failed_when: dns_result.status != 200
+
+- name: Create Caddy configs for services
+  delegate_to: firewall
+  ansible.builtin.copy:
+    dest: "/usr/local/etc/caddy/caddy.d/{{ app_name }}.conf"
+    mode: '0644'
+    content: |
+      {{ app_name }}.home:80 {
+          reverse_proxy "{{ ansible_hostname }}.home":{{ port }}
+      }
+    remote_src: false
+  notify: Restart caddy
+
+- name: Create resource for {{ app_name }} in Pangolin
+  when: public is defined and true
+  block:
+  - name: Get all existing resources
+    uri:
+      url: "https://api.meadows.page/v1/site/28/resources?limit=1000&offset=0"
+      method: GET
+      headers:
+        Authorization: "Bearer {{ PANGOLIN_API_KEY }}"
+      return_content: true
+    register: existing_resources
+    
+  - name: Create resource
+    when: existing_resources.json.data.resources | selectattr('name', 'equalto', app_name) | list | length == 0
+    uri:
+      url: "https://api.meadows.page/v1/org/meadows/site/28/resource"
+      method: PUT
+      headers:
+        Authorization: "Bearer {{ PANGOLIN_API_KEY }}"
+      body_format: json
+      body:
+        name: "{{ app_name }}"
+        subdomain: "{{ app_name }}"
+        isBaseDomain: false
+        http: true
+        protocol: "tcp"
+        siteId: 28
+        domainId: "domain1"
+      status_code: [200, 201, 202, 204]
+    register: new_resource
+
+  - name: Create target
+    when: existing_resources.json.data.resources | selectattr('name', 'equalto', app_name) | list | length == 0
+    uri:
+      url: "https://api.meadows.page/v1/resource/{{ new_resource.json.data.resourceId }}/target"
+      method: PUT
+      headers:
+        Authorization: "Bearer {{ PANGOLIN_API_KEY }}"
+      body_format: json
+      body:
+        ip: "{{ ansible_hostname }}.home"
+        method: "http"
+        port: "{{ port }}"
+        enabled: true
+      status_code: [200, 201, 202, 204]
+    register: new_target

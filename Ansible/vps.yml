@@ -8,7 +8,7 @@
   roles:
     - update
     - docker_compose
-    # - wireguard
+    - kuma
   tasks:
     - name: Add A record to Technitium DNS
       delegate_to: localhost

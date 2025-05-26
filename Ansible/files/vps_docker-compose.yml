@@ -1,9 +1,3 @@
-# configs:
-#   caddy-basic-content:
-#     file: ./Caddyfile
-#     labels:
-#       caddy:
-
 services:
   ntfy:
     image: binwiederhier/ntfy
@@ -50,16 +44,6 @@ services:
       timeout: 5s
       retries: 2
       start_period: 10s
-
-  uptime-kuma:
-    image: louislam/uptime-kuma:1
-    container_name: kuma
-    volumes:
-      - ./data_kuma:/app/data
-    ports:
-      - 3001:3001
-    restart: unless-stopped
-    user: 1111:1111
 
 networks:
   default:

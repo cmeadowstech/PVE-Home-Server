@@ -11,4 +11,4 @@ do
 done
 
 curl --request GET \
-  --url "http://10.0.11.2:5380/api/zones/records/add?token=$TECHNITIUM_API_TOKEN&zone=home&domain=$HOSTNAME.home&type=CNAME&ttl=&overwrite=true&expiryTtl=&cname=$DOMAIN"
+  --url "http://10.0.11.2:5380/api/zones/records/add?token=$TECHNITIUM_API_TOKEN&zone=home&domain=$HOSTNAME&type=CNAME&ttl=&overwrite=true&expiryTtl=&cname=$DOMAIN"
