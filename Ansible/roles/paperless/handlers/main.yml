@@ -1,2 +1,5 @@
 ---
-# handlers file for paperless
+- name: Restart {{ app_name }}
+  community.docker.docker_compose_v2:
+    project_src: /src/{{ app_name }}
+    state: restarted

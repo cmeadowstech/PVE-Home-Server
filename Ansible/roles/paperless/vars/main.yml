@@ -1,2 +1,3 @@
 ---
-# vars file for paperless
+app_name: "paperless"
+port: "8010"

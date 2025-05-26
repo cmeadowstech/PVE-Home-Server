@@ -1,36 +1,56 @@
 ---
-- name: Set app variables
-  set_fact:
-    app_name: "paperless"
-    port: "8010"
+- name: Create user
+  ansible.builtin.group:
+    name: "{{ app_name }}"
+    gid: 1111
+    state: present
+
+- name: Create group
+  ansible.builtin.user:
+    name: "{{ app_name }}"
+    uid: 1111
+    password: "{{ password | password_hash('sha512') }}"
 
 - name: Configure postgres database
-  delegate_to: postgres
-  become: true
-  become_user: postgres
   block:
-    - name: Create postgres user
+    - name: Create PostgreSQL user
+      delegate_to: localhost
       community.postgresql.postgresql_user:
         name: "{{ app_name }}"
         password: "{{ password }}"
+        login_host: db.home
+        login_user: cmeadows
+        login_password: "{{ password }}"
+        db: postgres
 
-    - name: Create postgres database {{ item }}
+    - name: Create PostgreSQL databases
+      delegate_to: localhost
       community.postgresql.postgresql_db:
-        name: "{{ item }}"
+        name: paperless
+        state: present
         owner: "{{ app_name }}"
         encoding: UTF-8
         template: template0
-      with_items:
-        - "{{ app_name }}"
+        login_host: db.home
+        login_user: cmeadows
+        login_password: "{{ password }}"
 
-- name: Configure {{ app_name }}
+- name: Configure paperless
+  notify: Restart {{ app_name }}
   block:
-    - name: Create app folders
+    - name: Create app folder
       ansible.builtin.file:
-        path: "{{ item }}"
+        path: /src/{{ app_name }}
+        mode: '0750'
         state: directory
-      with_items:
-      - /src/{{ app_name }}
+
+    - name: Create config folder
+      ansible.builtin.file:
+        path: "/mnt/config/{{ app_name }}"
+        state: directory
+        mode: '0750'
+        owner: "{{ app_name }}"
+        group: "{{ app_name }}"
 
     - name: Copy .env file
       ansible.builtin.copy:
@@ -42,24 +62,15 @@
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
       with_items:
-        - src: "{{ app_name }}_docker-compose.yml.j2"
+        - src: "docker-compose.yml.j2"
           dest: "/src/{{ app_name }}/docker-compose.yml"
         - src: "docker-compose.env.j2"
           dest: "/src/{{ app_name }}/docker-compose.env"
 
-    - name: Create and start {{ app_name }}
+    - name: Create and start paperless
       community.docker.docker_compose_v2:
         project_src: /src/{{ app_name }}
 
-    - name: Check if the {{ app_name }}.home resolves
-      getent:
-        database: hosts
-        key: "{{ app_name }}.home"
-      register: hostname_check
-      ignore_errors: yes
-
-    - name: Run script to add {{ app_name }}.home to technitium
-      script: technitium_script.sh -h {{ app_name }} -i {{ ansible_ens18.ipv4.address }}
-      when: hostname_check.failed
-      environment:
-        TECHNITIUM_API_TOKEN: "{{ TECHNITIUM_API_TOKEN }}"
+- name: Configure DNS and proxies
+  ansible.builtin.include_role:
+    name: proxy
