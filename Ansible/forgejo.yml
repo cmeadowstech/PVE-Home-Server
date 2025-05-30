@@ -1,0 +1,5 @@
+- name: Setup Forgejo server
+  hosts: git.home
+  roles:
+    - update
+    - forgejo

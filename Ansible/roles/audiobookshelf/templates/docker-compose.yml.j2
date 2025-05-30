@@ -3,6 +3,7 @@ services:
   audiobookshelf:
     container_name: {{ app_name }}
     image: ghcr.io/advplyr/audiobookshelf:latest
+	restart: unless-stopped
     ports:
       - {{ port }}:80
     volumes:

@@ -1,7 +1,7 @@
 ---
 - name: Add app cname record
   uri:
-    url: "http://10.0.11.2:5380/api/zones/records/add?token={{ TECHNITIUM_API_TOKEN }}&zone=home&domain=hoarder.home&type=CNAME&ttl=&overwrite=true&expiryTtl=&cname=firewall.home"
+    url: "http://10.0.11.2:5380/api/zones/records/add?token={{ TECHNITIUM_API_TOKEN }}&zone=home&domain={{ app_name }}.home&type=CNAME&ttl=&overwrite=true&expiryTtl=&cname=firewall.home"
     method: GET
     return_content: true
     validate_certs: false
@@ -21,7 +21,7 @@
   notify: Restart caddy
 
 - name: Create resource for {{ app_name }} in Pangolin
-  when: public is defined and true
+  when: public is defined and public is true
   block:
   - name: Get all existing resources
     uri:

@@ -1,4 +1,4 @@
-- name: Setup Jellyfin server
+- name: Setup fileflows
   hosts: video.home
   tasks:
     - name: Install dependencies

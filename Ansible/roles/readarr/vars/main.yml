@@ -1,0 +1,4 @@
+---
+app_name: readarr
+port: 8787
+public: false

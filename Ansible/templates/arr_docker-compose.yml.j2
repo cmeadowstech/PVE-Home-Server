@@ -83,3 +83,19 @@ services:
       - TZ=America/New_York
     volumes:
       - /mnt/config/prowlarr:/config
+  lidarr:
+    container_name: lidarr
+    user: root:root
+    image: ghcr.io/hotio/lidarr
+    ports:
+      - "8686:8686"
+    environment:
+      - PUID=101111
+      - PGID=101111
+      - UMASK=002
+      - TZ=America/New_York
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/config/lidarr:/config
+      - /mnt/downloads:/mnt/downloads
+      - /mnt/media:/data/media

@@ -1,0 +1,6 @@
+---
+forgejo_version: "11.0.1" 
+app_name: forgejo
+port: 3000
+subdomain: git
+public: true

@@ -224,16 +224,16 @@ module "library" {
     {
       key     = "1"
       slot    = 1
-      storage = "/storage/Media/Books"
-      volume  = "/storage/Media/Books"
+      storage = "/storage/streaming/Books"
+      volume  = "/storage/streaming/Books"
       mp      = "/mnt/Books"
       size    = "1T"
     },
     {
       key     = "2"
       slot    = 2
-      storage = "/storage/Media/cwa-book-ingest"
-      volume  = "/storage/Media/cwa-book-ingest"
+      storage = "/storage/streaming/cwa-book-ingest"
+      volume  = "/storage/streaming/cwa-book-ingest"
       mp      = "/mnt/cwa-book-ingest"
       size    = "1T"
     }
@@ -249,4 +249,34 @@ module "newt" {
   memory       = 2048
   password     = var.password
   storage_size = "8G"
+}
+
+module "git" {
+  depends_on = [module.technitium]
+  source     = "../modules/lxc"
+
+  hostname     = "git"
+  cores        = 2
+  memory       = 2048
+  password     = var.password
+  storage_size = "8G"
+
+  mountpoints = [
+    {
+      key     = "0"
+      slot    = 0
+      storage = "/storage/config"
+      volume  = "/storage/config"
+      mp      = "/mnt/config"
+      size    = "1T"
+    },
+    {
+      key     = "1"
+      slot    = 1
+      storage = "/storage/git"
+      volume  = "/storage/git"
+      mp      = "/mnt/git"
+      size    = "1T"
+    }
+  ]
 }

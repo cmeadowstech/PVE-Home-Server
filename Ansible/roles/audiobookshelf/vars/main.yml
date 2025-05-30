@@ -1,3 +1,5 @@
 ---
 app_name: audiobookshelf
 port: 13378
+subdomain: "{{ app_name }}"
+public: true

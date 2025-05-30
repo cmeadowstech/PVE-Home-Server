@@ -1,0 +1,16 @@
+services:
+  readarr:
+    container_name: {{ app_name }}
+    image: ghcr.io/hotio/readarr
+    restart: unless-stopped
+    ports:
+      - "{{ port }}:8787"
+    environment:
+      - TZ=America/New_York
+      - PUID=101111
+      - PGID=101111
+      - UMASK=002
+    volumes:
+      - /mnt/config/{{ app_name }}:/config
+      - /mnt/downloads:/mnt/downloads
+      - /mnt/media:/data/media

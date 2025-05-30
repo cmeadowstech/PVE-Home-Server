@@ -1,0 +1,79 @@
+---
+- name: Install Git and Git LFS
+  apt:
+    name:
+      - git
+      - git-lfs
+    state: present
+    update_cache: yes
+
+- name: Create group {{ app_name }}
+  ansible.builtin.group:
+    name: "{{ app_name }}"
+    gid: 1111
+    state: present
+  register: app_group
+
+- name: Create {{ app_name }} user
+  user:
+    name: "{{ app_name }}"
+    system: yes
+    comment: '{{ app_name }} app user '
+    uid: 1111
+    create_home: yes
+    home: /home/{{ app_name }}
+
+- name: Create PostgreSQL user
+  delegate_to: localhost
+  community.postgresql.postgresql_user:
+    name: "{{ app_name }}"
+    password: "{{ password }}"
+    login_host: db.home
+    login_user: cmeadows
+    login_password: "{{ password }}"
+    db: postgres
+  register: pg_user
+
+- name: Create PostgreSQL databases
+  delegate_to: localhost
+  community.postgresql.postgresql_db:
+    name: "{{ item }}"
+    state: present
+    owner: "{{ app_name }}"
+    encoding: "UTF8"
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    template: template0
+    login_host: db.home
+    login_user: cmeadows
+    login_password: "{{ password }}"
+  loop: 
+    - forgejodb 
+
+- name: Download Forgejo binary
+  get_url:
+    url: "https://codeberg.org/forgejo/forgejo/releases/download/v{{ forgejo_version }}/forgejo-{{ forgejo_version }}-linux-amd64"
+    dest: /usr/local/bin/forgejo
+    mode: '0755'
+
+- name: Create Forgejo directories
+  file:
+    path: /var/lib/forgejo
+    state: directory
+    owner: "{{ app_name }}"
+    group: "{{ app_name }}"
+    mode: '0750'
+  with_items:
+    - /var/lib/forgejo
+    - /mnt/config/forgego
+
+- name: Create {{ app_name }} systemd service file
+  template:
+    src: "{{ app_name }}.service.j2"
+    dest: "/lib/systemd/system/{{ app_name }}.service"
+    mode: '0644'
+  notify: Restart {{ app_name }}
+
+- name: Configure DNS and proxies
+  ansible.builtin.include_role:
+    name: proxy

@@ -6,6 +6,7 @@
     user: pod
   roles:
     - update
+    - readarr
   tasks:
     - name: Create group - {{ user }}
       ansible.builtin.group:
@@ -51,6 +52,8 @@
       loop: 
         - sonarr-main
         - sonarr-log
+        - lidarr-main
+        - lidarr-log
         - radarr-main
         - radarr-log
         - prowlarr-main
@@ -70,10 +73,11 @@
         - prowlarr
         - jellyseerr
         - bazarr
+        - lidarr
 
     - name: Create app folder
       ansible.builtin.file:
-        path: "/src/{{ app }}"
+        path: "/src/{{ app }}/data"
         state: directory
         mode: '0750'
         owner: "{{ app_user.name }}"
@@ -83,36 +87,12 @@
     - name: Copy docker compose
       ansible.builtin.template:
         src: "{{ app }}_docker-compose.yml.j2"
-        dest: "{{ app_folder.path }}/docker-compose.yml"
+        dest: "/src/{{ app }}/docker-compose.yml"
         mode: '0640'
-        owner: "{{ app_user.name }}"
-        group: "{{ app_user.group }}"
-
-    - name: Copy .env file
-      ansible.builtin.template:
-        src: "pocketid.env.j2"
-        dest: "{{ app_folder.path }}/pocketid.env"
-        mode: '0644'
-        owner: "{{ app_user.name }}"
-        group: "{{ app_user.group }}"
-
-    - name: Create data folder
-      ansible.builtin.file:
-        path: "{{ app_folder.path }}/data"
-        state: directory
-        mode: '0750'
         owner: "{{ app_user.name }}"
         group: "{{ app_user.group }}"
 
     - name: Create and start from docker-compose
       community.docker.docker_compose_v2:
-        project_src: "{{ app_folder.path }}"
+        project_src: "/src/{{ app }}"
       register: compose_output
-
-- name: Update Caddy
-  ansible.builtin.import_playbook: caddy.yml
-  vars:
-    apps:
-      - hostname: "bazarr"
-        upstream_host: "{{ hostvars.vars.host_fqdn }}"
-        port: "6767"
